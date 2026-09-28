@@ -7,7 +7,7 @@ const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" });
 
 export const metadata: Metadata = {
   title: {
-    default: "Nusadoc — Internal",
+    default: "Nusadoc — Sistem Dokumen Bisnis",
     template: "%s · Nusadoc",
   },
   description: "Nusadoc — sistem penawaran, invoice multi-termin, dan kwitansi dengan QR verifikasi publik. Setiap dokumen terlindungi hash SHA-256, tidak bisa dipalsukan.",
