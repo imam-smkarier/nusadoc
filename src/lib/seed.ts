@@ -343,8 +343,8 @@ export const seedSettings: CompanySettings = {
     "Harga berlaku sampai tanggal kedaluwarsa di atas. Garansi implementasi 90 hari setelah go-live.",
   defaultNotesInvoice: "Mohon cantumkan nomor invoice pada berita transfer.",
   banks: [
-    { id: "bank-001", bank: "BCA", number: "123-456-7890", holder: "PT. Nusadoc Technology System" },
-    { id: "bank-002", bank: "Bank Mandiri", number: "112-000-9876543", holder: "PT. Nusadoc Technology System" },
+    { id: "bank-001", bank: "BCA", number: "123-456-7890", holder: "PT. PT. SMKarier Inovasi Digital" },
+    { id: "bank-002", bank: "Bank Mandiri", number: "112-000-9876543", holder: "PT. PT. SMKarier Inovasi Digital" },
   ],
 };
 
