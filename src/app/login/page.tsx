@@ -84,7 +84,7 @@ function LoginInner() {
           animate={{ opacity: 1, y: 0 }}
           className="relative flex items-center gap-3"
         >
-          <Image src="/images/brand/nafiga-symbol.png" alt="NTS" width={375} height={352} className="h-auto w-12" />
+          <Image src="/images/brand/nusadoc-logo-horizontal.svg" alt="NTS" width={375} height={352} className="h-auto w-12" />
           <div className="leading-tight">
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-400">Nusadoc</p>
             <p className="font-display text-[24px] font-bold text-white">
@@ -254,7 +254,7 @@ function LoginInner() {
                   transition={{ type: "spring", duration: 0.8 }}
                   className="mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-line bg-brand-soft shadow-card"
                 >
-                  <Image src="/images/brand/nafiga-symbol.png" alt="NTS" width={375} height={352} className="h-auto w-8" />
+                  <Image src="/images/brand/nusadoc-logo-horizontal.svg" alt="NTS" width={375} height={352} className="h-auto w-8" />
                 </motion.div>
                 <motion.h2
                   initial={{ opacity: 0, y: 10 }}
