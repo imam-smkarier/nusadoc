@@ -1,0 +1,195 @@
+// Nafiga DocFlow — schema MySQL (Prisma 5, selaras nafiga-website).
+// Catatan: line items disimpan sebagai JSON agar bentuknya identik dengan
+// tipe aplikasi (LineItem[]); normalisasi penuh jadi tabel item ditunda
+// sampai kebutuhan pelaporan per-item muncul.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String   @id
+  code      String   @unique
+  name      String
+  address   String
+  city      String   @default("")
+  npwp      String   @default("")
+  picName   String   @default("")
+  picPhone  String   @default("")
+  picEmail  String   @default("")
+  createdAt DateTime @db.Date
+
+  quotations Quotation[]
+  invoices   Invoice[]
+  receipts   Receipt[]
+}
+
+model Quotation {
+  id           String   @id
+  number       String   @unique
+  seq          Int
+  status       String   @default("draft") // draft|sent|approved|rejected|expired
+  clientId     String
+  subject      String
+  date         DateTime @db.Date
+  validUntil   DateTime @db.Date
+  items        Json
+  ppnEnabled   Boolean  @default(true)
+  ppnRate      Int      @default(11)
+  pph23Enabled Boolean  @default(false)
+  pph23Rate    Int      @default(2)
+  notes        String?  @db.Text
+  token        String   @unique
+  hash         String
+  // Snapshot immutable penerbit/klien saat terbit (lihat DocSnapshot)
+  snapshot     Json?
+  issuedAt     DateTime @default(now())
+
+  client   Client    @relation(fields: [clientId], references: [id])
+  invoices Invoice[]
+
+  @@index([clientId])
+}
+
+model Invoice {
+  id           String   @id
+  number       String   @unique
+  seq          Int
+  terminIndex  Int?
+  terminLabel  String?
+  terminPct    Int?
+  quotationId  String?
+  clientId     String
+  subject      String
+  date         DateTime @db.Date
+  dueDate      DateTime @db.Date
+  items        Json
+  ppnEnabled   Boolean  @default(true)
+  ppnRate      Int      @default(11)
+  pph23Enabled Boolean  @default(false)
+  pph23Rate    Int      @default(2)
+  notes        String?  @db.Text
+  token        String   @unique
+  hash         String
+  // Snapshot immutable penerbit/klien saat terbit (lihat DocSnapshot)
+  snapshot     Json?
+  issuedAt     DateTime @default(now())
+
+  quotation Quotation? @relation(fields: [quotationId], references: [id])
+  client    Client     @relation(fields: [clientId], references: [id])
+  payments  Payment[]  @relation("InvoicePayments")
+
+  @@index([clientId])
+  @@index([quotationId])
+  @@unique([quotationId, terminIndex])
+}
+
+model Payment {
+  id        String   @id
+  invoiceId String
+  date      DateTime @db.Date
+  amount    BigInt
+  method    String
+  note      String?  @db.Text
+
+  invoice Invoice @relation("InvoicePayments", fields: [invoiceId], references: [id])
+  receipt Receipt?
+
+  @@index([invoiceId])
+}
+
+model Receipt {
+  id           String   @id
+  number       String   @unique
+  seq          Int
+  // FK: kwitansi selalu lahir setelah pembayaran — urutan insert aman
+  paymentId    String   @unique
+  invoiceId    String
+  clientId     String
+  amount       BigInt
+  method       String
+  date         DateTime @db.Date
+  forPaymentOf String   @db.Text
+  token        String   @unique
+  hash         String
+  // Snapshot immutable penerbit/klien/invoice-ref saat terbit
+  snapshot     Json?
+  issuedAt     DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  client  Client @relation(fields: [clientId], references: [id])
+
+  @@index([invoiceId])
+  @@index([clientId])
+}
+
+model ItemTemplate {
+  id      String @id
+  name    String
+  items   Json
+}
+
+model CompanySettings {
+  id                    String  @id @default("main")
+  name                  String
+  tagline               String  @default("")
+  address               String  @default("")
+  city                  String  @default("")
+  phone                 String  @default("")
+  email                 String  @default("")
+  website               String  @default("")
+  npwp                  String  @default("")
+  signName              String  @default("")
+  signTitle             String  @default("")
+  signCity              String  @default("")
+  ppnDefault            Boolean @default(true)
+  defaultNotesQuotation String  @db.Text
+  defaultNotesInvoice   String  @db.Text
+  banks                 Json
+}
+
+model User {
+  id           String    @id
+  email       String    @unique
+  name        String
+  passwordHash String
+  role        String    @default("finance") // admin | finance | sales | viewer — RBAC penuh menyusul
+  createdAt   DateTime  @default(now())
+  sessions    Session[]
+}
+
+model Session {
+  id        String   @id // token acak, dikirim sebagai cookie HttpOnly
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id       String   @id
+  at       DateTime @default(now())
+  actor    String   // email user server-side
+  action   String   // quotation.publish | quotation.status | invoice.publish | receipt.issue | client.create | settings.update
+  entity   String
+  entityId String
+  meta     Json?
+
+  @@index([entity, entityId])
+  @@index([at])
+}
+
+/// Penghitung penomoran atomik (anti race-condition).
+/// Key: QUO-YYYY-MM | INV-YYYY-MM | KWT-YYYY-MM | TERM-{quotationId}
+model DocumentCounter {
+  key   String @id
+  value Int    @default(0)
+}
