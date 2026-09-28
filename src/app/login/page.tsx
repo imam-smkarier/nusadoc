@@ -88,7 +88,7 @@ function LoginInner() {
           <div className="leading-tight">
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-400">Nusadoc</p>
             <p className="font-display text-[24px] font-bold text-white">
-              Doc<span className="text-brand">Flow</span>
+              Nusa<span className="text-brand">doc</span>
             </p>
           </div>
         </motion.div>
