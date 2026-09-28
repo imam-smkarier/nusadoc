@@ -40,7 +40,7 @@ export function InvoiceSheet({
       <DocumentHeader
         settings={settings}
         title="INVOICE"
-        docLabel="Tagihan · Nafiga DocFlow"
+        docLabel="Tagihan · Nusadoc"
         number={isPreview ? "NTS/INV/…/—" : invoice.number}
         dateLine={`Tanggal ${formatDateShort(invoice.date)} · Jatuh Tempo ${formatDateShort(invoice.dueDate)}`}
         badge={
@@ -112,7 +112,7 @@ export function InvoiceSheet({
         dateISO={invoice.date}
         token={invoice.token}
         hash={invoice.hash}
-        qrValue={isPreview ? "https://docflow.nafiga.co.id/v/DRAFT" : validationUrl(invoice.token)}
+        qrValue={isPreview ? "https://nusadoc.id/v/DRAFT" : validationUrl(invoice.token)}
       />
 
       <DocumentFooter settings={settings} />

@@ -1,5 +1,5 @@
 /**
- * Nafiga DocFlow — kontrak domain client/API, selaras dengan Prisma/MySQL.
+ * Nusadoc — kontrak domain client/API, selaras dengan Prisma/MySQL.
  * localStorage hanya dipakai untuk autosave draft atau fallback development;
  * dokumen terbit bersumber dari API server-side.
  */

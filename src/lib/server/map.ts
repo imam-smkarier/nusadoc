@@ -166,7 +166,7 @@ export async function loadAllData(db: PrismaClient): Promise<AppData> {
     settings: settingsRow
       ? mapSettings(settingsRow)
       : {
-          name: "PT. Nafiga Technology System",
+          name: "PT. SMKarier Inovasi Digital",
           tagline: "System Integrator — Digital Transformation Partner",
           address: "", city: "", phone: "", email: "", website: "", npwp: "",
           signName: "", signTitle: "", signCity: "",

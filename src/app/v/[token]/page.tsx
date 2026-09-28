@@ -2,7 +2,7 @@ import { ValidateClient } from "@/components/documents/ValidateClient";
 
 export const metadata = {
   title: "Validasi Dokumen",
-  description: "Verifikasi keaslian dokumen PT. Nafiga Technology System melalui QR / token.",
+  description: "Verifikasi keaslian dokumen PT. SMKarier Inovasi Digital melalui QR / token.",
 };
 
 /** Halaman validasi PUBLIK — tujuan scan QR, tanpa login. */

@@ -35,7 +35,7 @@ export function QuotationSheet({
       <DocumentHeader
         settings={settings}
         title="PENAWARAN"
-        docLabel="Quotation · Nafiga DocFlow"
+        docLabel="Quotation · Nusadoc"
         number={isPreview ? "NTS/QUO/…/—" : quotation.number}
         dateLine={`Tanggal ${formatDateShort(quotation.date)} · Berlaku s.d. ${formatDateShort(quotation.validUntil)}`}
         badge={
@@ -88,7 +88,7 @@ export function QuotationSheet({
         counterLabel="Menyetujui,"
         token={quotation.token}
         hash={quotation.hash}
-        qrValue={isPreview ? "https://docflow.nafiga.co.id/v/DRAFT" : validationUrl(quotation.token)}
+        qrValue={isPreview ? "https://nusadoc.id/v/DRAFT" : validationUrl(quotation.token)}
       />
 
       <DocumentFooter settings={settings} />

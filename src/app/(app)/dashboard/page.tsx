@@ -46,7 +46,7 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title="Dashboard"
-        desc="Ringkasan alur dokumen PT. Nafiga Technology System — data demo lokal."
+        desc="Ringkasan alur dokumen PT. SMKarier Inovasi Digital — data demo lokal."
         actions={
           <>
             {canQuo && (

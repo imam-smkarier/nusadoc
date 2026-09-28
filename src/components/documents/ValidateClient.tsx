@@ -70,7 +70,7 @@ export function ValidateClient({ token }: { token: string }) {
               <p className="text-[10px] uppercase tracking-[0.14em] text-slate-400">Validasi Dokumen Publik</p>
             </div>
           </div>
-          <p className="hidden text-[12px] text-slate-400 sm:block">PT. Nusadoc Technology System</p>
+          <p className="hidden text-[12px] text-slate-400 sm:block">PT. SMKarier Inovasi Digital</p>
         </div>
       </header>
 
@@ -88,7 +88,7 @@ export function ValidateClient({ token }: { token: string }) {
               <h1 className="mt-4 font-display text-[20px] font-bold text-navy">Dokumen Tidak Ditemukan</h1>
               <p className="mt-2 text-[13.5px] leading-relaxed text-slate-500">
                 Token <span className="tnum font-semibold text-navy">{token}</span> tidak terdaftar pada arsip
-                dokumen PT. Nusadoc Technology System. Pastikan QR dipindai dari dokumen asli.
+                dokumen PT. SMKarier Inovasi Digital. Pastikan QR dipindai dari dokumen asli.
               </p>
               <p className="tnum mt-4 rounded-lg border border-dashed border-line bg-canvas/60 px-3.5 py-2.5 text-[12px] text-slate-400">
                 Token valid berformat NTS-XXXX-XXXX-XXXX dan tidak berurutan.

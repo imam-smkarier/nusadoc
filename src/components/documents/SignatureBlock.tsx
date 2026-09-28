@@ -47,7 +47,7 @@ export function SignatureBlock({
         </div>
       ) : (
         <div className="max-w-[300px] text-[7.5px] leading-[1.7] text-slate-400">
-          Dokumen ini diterbitkan elektronik oleh Nafiga DocFlow. Keabsahan dapat diperiksa dengan memindai QR
+          Dokumen ini diterbitkan elektronik oleh Nusadoc. Keabsahan dapat diperiksa dengan memindai QR
           atau membuka tautan validasi yang tercetak di samping.
         </div>
       )}

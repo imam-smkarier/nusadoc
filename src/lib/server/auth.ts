@@ -74,12 +74,12 @@ export async function ensureAdminUser(): Promise<void> {
   const password = process.env.ADMIN_INITIAL_PASSWORD || "docflow-admin";
   const hash = hashPassword(password);
   const users = [
-    { id: "user_admin", email: "admin@nafiga.co.id", name: "Admin Keuangan", role: "admin" },
+    { id: "user_admin", email: "admin@smkarier.co.id", name: "Admin Keuangan", role: "admin" },
     // akun demo RBAC — hanya dibuat di environment development
     ...(process.env.NODE_ENV !== "production"
       ? [
-          { id: "user_sales", email: "sales@nafiga.co.id", name: "Sales NTS", role: "sales" },
-          { id: "user_viewer", email: "viewer@nafiga.co.id", name: "Pemantau", role: "viewer" },
+          { id: "user_sales", email: "sales@smkarier.co.id", name: "Sales Nusadoc", role: "sales" },
+          { id: "user_viewer", email: "viewer@smkarier.co.id", name: "Pemantau", role: "viewer" },
         ]
       : []),
   ];
