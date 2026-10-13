@@ -62,10 +62,10 @@ export function ValidateClient({ token }: { token: string }) {
       <header className="border-b border-line bg-panel">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3.5">
           <div className="flex items-center gap-2.5">
-            <Image src="/images/brand/nusadoc-symbol.png" alt="NTS" width={375} height={352} className="h-auto w-8" />
+            <Image src="/images/brand/nusadoc-symbol.png" alt="Nusadoc" width={855} height={937} className="h-auto w-8" />
             <div className="leading-tight">
               <p className="font-display text-[15px] font-bold text-navy">
-                Doc<span className="text-brand">Flow</span>
+                Nusa<span className="text-brand">doc</span>
               </p>
               <p className="text-[10px] uppercase tracking-[0.14em] text-slate-400">Validasi Dokumen Publik</p>
             </div>

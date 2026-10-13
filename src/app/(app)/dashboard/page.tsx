@@ -46,7 +46,7 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title="Dashboard"
-        desc="Ringkasan alur dokumen PT. SMKarier Inovasi Digital — data demo lokal."
+        desc="Ringkasan alur dokumen Nusadoc — penawaran, invoice, dan kwitansi dalam satu jalur."
         actions={
           <>
             {canQuo && (

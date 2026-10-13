@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowRight, FileCheck2, Lock, Mail, QrCode, ShieldCheck } from "lucide-react";
@@ -84,11 +85,13 @@ function LoginInner() {
           animate={{ opacity: 1, y: 0 }}
           className="relative flex items-center gap-3"
         >
-          <Image src="/images/brand/nusadoc-symbol.svg" alt="NTS" width={375} height={352} className="h-auto w-12" />
-          <div className="leading-tight">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-400">Nusadoc</p>
-            <p className="font-display text-[24px] font-bold text-white">
+          <Image src="/images/brand/nusadoc-symbol-on-dark.png" alt="Nusadoc" width={855} height={937} className="h-12 w-auto shrink-0" />
+          <div className="leading-none">
+            <p className="font-display text-[24px] font-bold tracking-tight text-white">
               Nusa<span className="text-brand">doc</span>
+            </p>
+            <p className="mt-1.5 text-[10.5px] font-medium uppercase tracking-[0.28em] text-slate-400">
+              Sistem Dokumen Bisnis
             </p>
           </div>
         </motion.div>
@@ -155,7 +158,7 @@ function LoginInner() {
           transition={{ delay: 0.9 }}
           className="relative text-[11.5px] text-slate-500"
         >
-          PT. SMKarier Inovasi Digital · MySQL + Prisma terhubung — data demo tersimpan di database
+          Nusadoc · MySQL + Prisma terhubung — data demo tersimpan di database
         </motion.p>
       </div>
 
@@ -254,7 +257,7 @@ function LoginInner() {
                   transition={{ type: "spring", duration: 0.8 }}
                   className="mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-line bg-brand-soft shadow-card"
                 >
-                  <Image src="/images/brand/nusadoc-symbol.svg" alt="NTS" width={375} height={352} className="h-auto w-8" />
+                  <Image src="/images/brand/nusadoc-symbol.png" alt="Nusadoc" width={855} height={937} className="h-auto w-8" />
                 </motion.div>
                 <motion.h2
                   initial={{ opacity: 0, y: 10 }}
@@ -270,7 +273,7 @@ function LoginInner() {
                   transition={{ delay: 0.3 }}
                   className="text-[12px] text-slate-500"
                 >
-                  Modul Penawaran & Invoice · PT. SMKarier Inovasi Digital
+                  Modul Penawaran & Invoice · Nusadoc
                 </motion.p>
               </div>
 
@@ -367,6 +370,15 @@ function LoginInner() {
                     {error}
                   </motion.p>
                 )}
+
+                <div className="text-center">
+                  <Link
+                    href="/daftar"
+                    className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand transition-colors hover:text-brand-dark"
+                  >
+                    Belum punya akun? Coba Gratis 30 Hari →
+                  </Link>
+                </div>
 
                 <p className="rounded-lg border border-dashed border-line bg-canvas/70 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-slate-500">
                   Demo awal: <span className="tnum font-semibold text-navy">admin@smkarier.co.id</span> ·{" "}

@@ -30,9 +30,11 @@ export function DocumentHeader({
       <div className="flex items-start justify-between gap-6">
         <div className="flex items-start gap-3">
           <Image
-            src="/images/brand/nusadoc-symbol.svg"
+            src="/images/brand/nusadoc-symbol.png"
             alt="Logo Nusadoc"
-            width={350} height={370} className="mt-0.5 h-auto w-[40px]"
+            width={855}
+            height={937}
+            className="mt-0.5 h-auto w-[34px]"
           />
           <div>
             <h1 className="font-display text-[15px] font-bold leading-tight text-navy">{settings.name}</h1>

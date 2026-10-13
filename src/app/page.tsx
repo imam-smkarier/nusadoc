@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Landing from "@/components/landing/Landing";
 
 export const metadata: Metadata = {
-  title: "Nusadoc — Sistem Dokumen Bisnis dengan QR Verifikasi",
+  title: "Nusadoc — Software Invoice Multi-Termin & Kwitansi QR Otomatis Indonesia",
   description:
-    "Nusadoc menyambungkan penawaran, invoice multi-termin, dan kwitansi dalam satu alur: data tidak diketik dua kali, dan setiap dokumen membawa QR verifikasi yang tidak bisa dipalsukan.",
+    "Software penawaran harga B2B, invoice termin proyek otomatis, dan kwitansi ber-QR publik yang tidak bisa dipalsukan. Bebas salah hitung PPN/PPh, anti-rekap manual, amankan cash flow bisnis Anda.",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function LandingPage() {
