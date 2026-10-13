@@ -10,3 +10,5 @@ next-env.d.ts
 .playwright-mcp
 coverage
 *.log
+.zcode
+
