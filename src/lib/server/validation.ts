@@ -99,6 +99,15 @@ export const templateInput = z.object({
   items: z.array(lineItem).min(1),
 });
 
+export const subscriptionCheckoutInput = z.object({
+  plan: z.enum(["lite", "bulanan", "hakguna"], {
+    errorMap: () => ({ message: "Paket harus 'lite', 'bulanan', atau 'hakguna'" }),
+  }),
+  customerName: z.string().trim().min(2, "Nama pembeli minimal 2 karakter").max(100),
+  customerEmail: z.string().trim().email("Format email pembeli tidak valid"),
+  customerPhone: z.string().trim().max(30).optional(),
+});
+
 /** Bantu handler: balikkan 422 terformat bila payload tidak valid. */
 export function parseOr400<T>(
   schema: z.ZodType<T>,
