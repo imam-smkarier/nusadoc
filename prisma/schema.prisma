@@ -1,4 +1,4 @@
-// Nafiga DocFlow — schema MySQL (Prisma 5, selaras nafiga-website).
+// Nusadoc — schema MySQL (Prisma 5)
 // Catatan: line items disimpan sebagai JSON agar bentuknya identik dengan
 // tipe aplikasi (LineItem[]); normalisasi penuh jadi tabel item ditunda
 // sampai kebutuhan pelaporan per-item muncul.
@@ -12,130 +12,179 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Client {
-  id        String   @id
-  code      String   @unique
-  name      String
-  address   String
-  city      String   @default("")
-  npwp      String   @default("")
-  picName   String   @default("")
-  picPhone  String   @default("")
-  picEmail  String   @default("")
-  createdAt DateTime @db.Date
+/// Organisasi/perusahaan pelanggan (tenant SaaS).
+/// Satu org = satu workspace terisolasi: klien, dokumen, pengaturan, langganan.
+model Organization {
+  id          String    @id
+  name        String
+  plan        String    @default("trial") // trial | lite | bulanan | hakguna | enterprise
+  trialEndsAt DateTime? // batas trial 30 hari (null jika paket berbayar)
+  createdAt   DateTime  @default(now())
 
-  quotations Quotation[]
-  invoices   Invoice[]
-  receipts   Receipt[]
+  users           User[]
+  clients         Client[]
+  quotations      Quotation[]
+  invoices        Invoice[]
+  payments        Payment[]
+  receipts        Receipt[]
+  templates       ItemTemplate[]
+  settings        CompanySettings?
+  deliverySetting DeliverySettings?
+  subscriptions   Subscription[]
+
+  @@index([plan])
+}
+
+model Client {
+  id             String   @id
+  organizationId String
+  code           String
+  name           String
+  address        String
+  city           String   @default("")
+  npwp           String   @default("")
+  picName        String   @default("")
+  picPhone       String   @default("")
+  picEmail       String   @default("")
+  createdAt      DateTime @db.Date
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  quotations   Quotation[]
+  invoices     Invoice[]
+  receipts     Receipt[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
 }
 
 model Quotation {
-  id           String   @id
-  number       String   @unique
-  seq          Int
-  status       String   @default("draft") // draft|sent|approved|rejected|expired
-  clientId     String
-  subject      String
-  date         DateTime @db.Date
-  validUntil   DateTime @db.Date
-  items        Json
-  ppnEnabled   Boolean  @default(true)
-  ppnRate      Int      @default(11)
-  pph23Enabled Boolean  @default(false)
-  pph23Rate    Int      @default(2)
-  notes        String?  @db.Text
-  token        String   @unique
-  hash         String
+  id             String   @id
+  organizationId String
+  number         String
+  seq            Int
+  status         String   @default("draft") // draft|sent|approved|rejected|expired
+  clientId       String
+  subject        String
+  date           DateTime @db.Date
+  validUntil     DateTime @db.Date
+  items          Json
+  ppnEnabled     Boolean  @default(true)
+  ppnRate        Int      @default(11)
+  pph23Enabled   Boolean  @default(false)
+  pph23Rate      Int      @default(2)
+  notes          String?  @db.Text
+  token          String   @unique
+  hash           String
   // Snapshot immutable penerbit/klien saat terbit (lihat DocSnapshot)
-  snapshot     Json?
-  issuedAt     DateTime @default(now())
+  snapshot       Json?
+  issuedAt       DateTime @default(now())
 
-  client   Client    @relation(fields: [clientId], references: [id])
-  invoices Invoice[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  client       Client       @relation(fields: [clientId], references: [id])
+  invoices     Invoice[]
 
+  @@unique([organizationId, number])
+  @@index([organizationId])
   @@index([clientId])
 }
 
 model Invoice {
-  id           String   @id
-  number       String   @unique
-  seq          Int
-  terminIndex  Int?
-  terminLabel  String?
-  terminPct    Int?
-  quotationId  String?
-  clientId     String
-  subject      String
-  date         DateTime @db.Date
-  dueDate      DateTime @db.Date
-  items        Json
-  ppnEnabled   Boolean  @default(true)
-  ppnRate      Int      @default(11)
-  pph23Enabled Boolean  @default(false)
-  pph23Rate    Int      @default(2)
-  notes        String?  @db.Text
-  token        String   @unique
-  hash         String
+  id             String   @id
+  organizationId String
+  number         String
+  seq            Int
+  terminIndex    Int?
+  terminLabel    String?
+  terminPct      Int?
+  quotationId    String?
+  clientId       String
+  subject        String
+  date           DateTime @db.Date
+  dueDate        DateTime @db.Date
+  items          Json
+  ppnEnabled     Boolean  @default(true)
+  ppnRate        Int      @default(11)
+  pph23Enabled   Boolean  @default(false)
+  pph23Rate      Int      @default(2)
+  notes          String?  @db.Text
+  token          String   @unique
+  hash           String
   // Snapshot immutable penerbit/klien saat terbit (lihat DocSnapshot)
-  snapshot     Json?
-  issuedAt     DateTime @default(now())
+  snapshot       Json?
+  issuedAt       DateTime @default(now())
 
-  quotation Quotation? @relation(fields: [quotationId], references: [id])
-  client    Client     @relation(fields: [clientId], references: [id])
-  payments  Payment[]  @relation("InvoicePayments")
+  organization Organization @relation(fields: [organizationId], references: [id])
+  quotation    Quotation?   @relation(fields: [quotationId], references: [id])
+  client       Client       @relation(fields: [clientId], references: [id])
+  payments     Payment[]    @relation("InvoicePayments")
 
+  @@unique([organizationId, number])
+  @@unique([quotationId, terminIndex])
+  @@index([organizationId])
   @@index([clientId])
   @@index([quotationId])
-  @@unique([quotationId, terminIndex])
 }
 
 model Payment {
-  id        String   @id
-  invoiceId String
-  date      DateTime @db.Date
-  amount    BigInt
-  method    String
-  note      String?  @db.Text
+  id             String   @id
+  organizationId String
+  invoiceId      String
+  date           DateTime @db.Date
+  amount         BigInt
+  method         String
+  note           String?  @db.Text
 
-  invoice Invoice @relation("InvoicePayments", fields: [invoiceId], references: [id])
-  receipt Receipt?
+  organization Organization @relation(fields: [organizationId], references: [id])
+  invoice      Invoice      @relation("InvoicePayments", fields: [invoiceId], references: [id])
+  receipt      Receipt?
 
+  @@index([organizationId])
   @@index([invoiceId])
 }
 
 model Receipt {
-  id           String   @id
-  number       String   @unique
-  seq          Int
+  id             String   @id
+  organizationId String
+  number         String
+  seq            Int
   // FK: kwitansi selalu lahir setelah pembayaran — urutan insert aman
-  paymentId    String   @unique
-  invoiceId    String
-  clientId     String
-  amount       BigInt
-  method       String
-  date         DateTime @db.Date
-  forPaymentOf String   @db.Text
-  token        String   @unique
-  hash         String
+  paymentId      String   @unique
+  invoiceId      String
+  clientId       String
+  amount         BigInt
+  method         String
+  date           DateTime @db.Date
+  forPaymentOf   String   @db.Text
+  token          String   @unique
+  hash           String
   // Snapshot immutable penerbit/klien/invoice-ref saat terbit
-  snapshot     Json?
-  issuedAt     DateTime @default(now())
+  snapshot       Json?
+  issuedAt       DateTime @default(now())
 
-  payment Payment @relation(fields: [paymentId], references: [id])
-  client  Client @relation(fields: [clientId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  payment      Payment      @relation(fields: [paymentId], references: [id])
+  client       Client       @relation(fields: [clientId], references: [id])
 
+  @@unique([organizationId, number])
+  @@index([organizationId])
   @@index([invoiceId])
   @@index([clientId])
 }
 
 model ItemTemplate {
-  id      String @id
-  name    String
-  items   Json
+  id             String @id
+  organizationId String
+  name           String
+  items          Json
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
 }
 
 model CompanySettings {
   id                    String  @id @default("main")
+  organizationId        String  @unique
   name                  String
   tagline               String  @default("")
   address               String  @default("")
@@ -151,16 +200,69 @@ model CompanySettings {
   defaultNotesQuotation String  @db.Text
   defaultNotesInvoice   String  @db.Text
   banks                 Json
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+/// Konfigurasi pengiriman email & WhatsApp (per organisasi).
+/// Password SMTP & token WA tersimpan terenkripsi AES-256-GCM — tidak pernah dikembalikan plaintext ke UI.
+model DeliverySettings {
+  id                    String   @id @default("main")
+  organizationId        String   @unique
+  emailEnabled          Boolean  @default(false)
+  smtpHost              String   @default("")
+  smtpPort              Int      @default(587)
+  smtpSecure            Boolean  @default(false) // true = port 465 implicit TLS
+  smtpUser              String   @default("")
+  smtpPasswordEnc       String   @default("") // AES-256-GCM encrypted
+  smtpFromName          String   @default("Nusadoc")
+  smtpFromEmail         String   @default("")
+  waEnabled             Boolean  @default(false)
+  waProvider            String   @default("fonnte") // fonnte | wablas (Fonnte default — populer di Indonesia)
+  waTokenEnc            String   @default("") // AES-256-GCM encrypted
+  waAdminPhone          String   @default("") // nomor admin penerima notifikasi internal
+  autoSendOnPublish     Boolean  @default(true) // kirim dokumen ke klien saat terbit
+  autoSendOnPayment     Boolean  @default(true) // kirim kwitansi ke klien saat pembayaran dicatat
+  reminderDaysBeforeDue Int      @default(3) // reminder jatuh tempo invoice (0 = mati)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+/// Log pengiriman email/WhatsApp per dokumen (audit delivery).
+model DeliveryLog {
+  id            String   @id
+  organizationId String
+  channel       String // email | whatsapp
+  target        String // email tujuan / nomor WA
+  subject       String   @default("")
+  status        String // sent | failed
+  error         String?  @db.Text
+  relatedType   String? // quotation | invoice | receipt | test
+  relatedId     String?
+  createdAt     DateTime @default(now())
+
+  @@index([relatedType, relatedId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([status])
 }
 
 model User {
-  id           String    @id
-  email       String    @unique
-  name        String
-  passwordHash String
-  role        String    @default("finance") // admin | finance | sales | viewer — RBAC penuh menyusul
-  createdAt   DateTime  @default(now())
-  sessions    Session[]
+  id             String               @id
+  organizationId String
+  email          String               @unique
+  name           String
+  passwordHash   String
+  role           String               @default("finance") // admin | finance | sales | viewer
+  createdAt      DateTime             @default(now())
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  sessions       Session[]
+  devices        DeviceSigner[]
+  refreshTokens  MobileRefreshToken[]
+
+  @@index([organizationId])
 }
 
 model Session {
@@ -177,8 +279,8 @@ model Session {
 model AuditLog {
   id       String   @id
   at       DateTime @default(now())
-  actor    String   // email user server-side
-  action   String   // quotation.publish | quotation.status | invoice.publish | receipt.issue | client.create | settings.update
+  actor    String // email user server-side
+  action   String // quotation.publish | quotation.status | invoice.publish | receipt.issue | client.create | settings.update
   entity   String
   entityId String
   meta     Json?
@@ -187,9 +289,109 @@ model AuditLog {
   @@index([at])
 }
 
-/// Penghitung penomoran atomik (anti race-condition).
-/// Key: QUO-YYYY-MM | INV-YYYY-MM | KWT-YYYY-MM | TERM-{quotationId}
+/// Penghitung penomoran atomik (anti race-condition), per organisasi.
+/// Key: {organizationId}:QUO-YYYY-MM | {organizationId}:INV-YYYY-MM | {organizationId}:KWT-YYYY-MM | TERM-{quotationId}
 model DocumentCounter {
   key   String @id
   value Int    @default(0)
+}
+
+model Subscription {
+  id                 String            @id
+  organizationId     String? // terisi bila checkout dari dalam app / ter-link via email
+  userId             String? // pembeli terdaftar (opsional untuk guest checkout)
+  plan               String // lite | bulanan | hakguna | enterprise
+  status             String            @default("pending") // pending | active | expired | cancelled
+  amount             BigInt
+  interval           String // monthly | lifetime
+  orderId            String            @unique
+  snapToken          String?
+  snapRedirectUrl    String?
+  paymentType        String? // qris | bank_transfer | credit_card | etc.
+  customerName       String
+  customerEmail      String
+  customerPhone      String?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  paidAt             DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  organization       Organization?     @relation(fields: [organizationId], references: [id])
+  logs               SubscriptionLog[]
+
+  @@index([status])
+  @@index([customerEmail])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model SubscriptionLog {
+  id             String       @id
+  subscriptionId String
+  event          String // snap.created | webhook.received | payment.settled | payment.expired
+  status         String
+  rawPayload     Json?
+  createdAt      DateTime     @default(now())
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([createdAt])
+}
+
+/// Pendaftaran perangkat mobile untuk TTE dan persetujuan biometrik
+model DeviceSigner {
+  id            String    @id
+  userId        String
+  deviceId      String    @unique // UUID unik perangkat
+  deviceName    String // mis. "iPhone 15 Pro" / "Samsung S24"
+  publicKey     String    @db.Text // Public Key ECDSA P-256 (PEM atau Base64)
+  fcmToken      String?   @db.Text // Token Push Notification Firebase
+  biometricType String    @default("biometric") // face_id | fingerprint | pin
+  pinHash       String? // Hash scrypt untuk PIN cadangan
+  isActive      Boolean   @default(true)
+  lastUsedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  signatures DocumentSignatureLog[]
+
+  @@index([userId])
+  @@index([deviceId])
+}
+
+/// Jejak audit hukum setiap tanda tangan/persetujuan mobile
+model DocumentSignatureLog {
+  id             String   @id
+  documentType   String // quotation | invoice
+  documentId     String
+  signerId       String
+  signatureProof String   @db.Text // Signature kriptografis Base64
+  biometricType  String // face_id | fingerprint | pin
+  deviceInfo     String // OS, Model, App Version
+  ipAddress      String   @default("")
+  latitude       Float?
+  longitude      Float?
+  signedAt       DateTime @default(now())
+
+  signer DeviceSigner @relation(fields: [signerId], references: [id], onDelete: Cascade)
+
+  @@index([documentType, documentId])
+  @@index([signedAt])
+}
+
+/// Sesi refresh token mobile (disimpan terenkripsi di Secure Storage Flutter)
+model MobileRefreshToken {
+  id        String   @id
+  userId    String
+  deviceId  String
+  tokenHash String   @unique // SHA-256 hash dari refresh token
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([expiresAt])
 }
