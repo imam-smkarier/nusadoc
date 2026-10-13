@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/app/AppShell";
 import { Button, Card, CardHeader, Toggle } from "@/components/ui/primitives";
 import { Field, TextInput } from "@/components/ui/form";
 import { useToast } from "@/components/ui/Modal";
+import { SubscriptionCard } from "@/components/subscription/SubscriptionCard";
+import { DeliverySettingsPanel } from "@/components/subscription/DeliverySettingsPanel";
 import { useApp } from "@/lib/store";
 import { useCan } from "@/lib/auth";
 import { uid } from "@/lib/utils";
@@ -56,6 +58,14 @@ export default function PengaturanPage() {
       />
 
       <div className="grid gap-4 p-5 xl:grid-cols-2 lg:p-7">
+        <div className="col-span-full">
+          <SubscriptionCard />
+        </div>
+
+        <div className="col-span-full">
+          <DeliverySettingsPanel />
+        </div>
+
         <Card>
           <CardHeader title="Profil Perusahaan" desc="Tercetak di header setiap dokumen." />
           <div className="grid grid-cols-2 gap-4 p-5">
