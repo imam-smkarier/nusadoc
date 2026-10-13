@@ -5,6 +5,9 @@ import { can } from "@/lib/permissions";
 import { logAudit } from "@/lib/server/audit";
 import { prisma } from "@/lib/server/db";
 import { parseOr400, quotationStatusInput } from "@/lib/server/validation";
+import { deliverDocument } from "@/lib/server/deliver-doc";
+import { computeTotals } from "@/lib/calc";
+import type { LineItem } from "@/lib/types";
 
 /**
  * State machine status penawaran (server-side):
@@ -34,7 +37,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (isResponse(me)) return me;
   if (!can(me.role, needed)) return NextResponse.json({ error: `Peran ${me.role} tidak berizin untuk ${needed}` }, { status: 403 });
 
-  const existing = await prisma.quotation.findUnique({ where: { id } });
+  const existing = await prisma.quotation.findFirst({
+    where: { id, organizationId: user.organizationId },
+  });
   if (!existing) return NextResponse.json({ error: "Penawaran tidak ditemukan" }, { status: 404 });
 
   if (!(TRANSITIONS[existing.status] ?? []).includes(status)) {
@@ -46,5 +51,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const row = await prisma.quotation.update({ where: { id }, data: { status } });
   await logAudit(user.email, "quotation.status", "Quotation", id, { from: existing.status, to: status });
+
+  // Auto-delivery: penawaran dikirim ke klien saat berstatus "sent"
+  if (status === "sent") {
+    const total = computeTotals(existing.items as unknown as LineItem[], {
+      ppnEnabled: existing.ppnEnabled, ppnRate: existing.ppnRate,
+      pph23Enabled: existing.pph23Enabled, pph23Rate: existing.pph23Rate,
+    }).total;
+    deliverDocument(req.nextUrl.origin, {
+      organizationId: row.organizationId,
+      kind: "Penawaran",
+      number: row.number,
+      token: row.token,
+      clientId: row.clientId,
+      subject: row.subject,
+      total,
+      relatedId: row.id,
+      relatedType: "quotation",
+    });
+  }
+
   return NextResponse.json(mapQuotation(row));
 }

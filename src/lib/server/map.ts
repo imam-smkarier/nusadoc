@@ -146,15 +146,17 @@ export function mapSettings(r: DbSettingsRow): CompanySettings {
   };
 }
 
-export async function loadAllData(db: PrismaClient): Promise<AppData> {
+/** Muat seluruh data domain MILIK satu organisasi (tenant-scoped). */
+export async function loadAllData(db: PrismaClient, organizationId: string): Promise<AppData> {
+  const orgWhere = { organizationId };
   const [clients, quotations, invoices, payments, receipts, templates, settingsRow] = await Promise.all([
-    db.client.findMany({ orderBy: { createdAt: "asc" } }),
-    db.quotation.findMany({ orderBy: { issuedAt: "desc" } }),
-    db.invoice.findMany({ orderBy: { issuedAt: "desc" } }),
-    db.payment.findMany({ include: { receipt: true }, orderBy: { date: "asc" } }),
-    db.receipt.findMany({ orderBy: { issuedAt: "desc" } }),
-    db.itemTemplate.findMany({ orderBy: { name: "asc" } }),
-    db.companySettings.findFirst(),
+    db.client.findMany({ where: orgWhere, orderBy: { createdAt: "asc" } }),
+    db.quotation.findMany({ where: orgWhere, orderBy: { issuedAt: "desc" } }),
+    db.invoice.findMany({ where: orgWhere, orderBy: { issuedAt: "desc" } }),
+    db.payment.findMany({ where: orgWhere, include: { receipt: true }, orderBy: { date: "asc" } }),
+    db.receipt.findMany({ where: orgWhere, orderBy: { issuedAt: "desc" } }),
+    db.itemTemplate.findMany({ where: orgWhere, orderBy: { name: "asc" } }),
+    db.companySettings.findUnique({ where: { organizationId } }),
   ]);
   return {
     clients: clients.map(mapClient),
@@ -166,8 +168,8 @@ export async function loadAllData(db: PrismaClient): Promise<AppData> {
     settings: settingsRow
       ? mapSettings(settingsRow)
       : {
-          name: "PT. SMKarier Inovasi Digital",
-          tagline: "System Integrator — Digital Transformation Partner",
+          name: "Perusahaan Saya",
+          tagline: "Dokumen resmi via Nusadoc",
           address: "", city: "", phone: "", email: "", website: "", npwp: "",
           signName: "", signTitle: "", signCity: "",
           ppnDefault: true, defaultNotesQuotation: "", defaultNotesInvoice: "", banks: [],

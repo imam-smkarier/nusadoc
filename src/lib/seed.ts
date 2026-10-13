@@ -103,7 +103,7 @@ export const seedQuotations: Quotation[] = [
   {
     id: "quo-001",
     kind: "quotation",
-    number: "NTS/QUO/2026/08/001",
+    number: "NSD/QUO/2026/08/001",
     seq: 1,
     status: "approved",
     clientId: "cli-001",
@@ -121,7 +121,7 @@ export const seedQuotations: Quotation[] = [
   {
     id: "quo-002",
     kind: "quotation",
-    number: "NTS/QUO/2026/09/001",
+    number: "NSD/QUO/2026/09/001",
     seq: 1,
     status: "sent",
     clientId: "cli-002",
@@ -143,7 +143,7 @@ export const seedQuotations: Quotation[] = [
   {
     id: "quo-003",
     kind: "quotation",
-    number: "NTS/QUO/2026/09/002",
+    number: "NSD/QUO/2026/09/002",
     seq: 2,
     status: "draft",
     clientId: "cli-003",
@@ -164,7 +164,7 @@ export const seedQuotations: Quotation[] = [
   {
     id: "quo-004",
     kind: "quotation",
-    number: "NTS/QUO/2026/07/003",
+    number: "NSD/QUO/2026/07/003",
     seq: 3,
     status: "rejected",
     clientId: "cli-004",
@@ -190,7 +190,7 @@ export const seedInvoices: Invoice[] = [
   {
     id: "inv-001",
     kind: "invoice",
-    number: "NTS/INV/2026/08/001-T1",
+    number: "NSD/INV/2026/08/001-T1",
     seq: 1,
     terminIndex: 1,
     terminLabel: "Uang Muka (DP) 50%",
@@ -210,7 +210,7 @@ export const seedInvoices: Invoice[] = [
   {
     id: "inv-002",
     kind: "invoice",
-    number: "NTS/INV/2026/08/001-T2",
+    number: "NSD/INV/2026/08/001-T2",
     seq: 1,
     terminIndex: 2,
     terminLabel: "Progres Pekerjaan 30%",
@@ -230,7 +230,7 @@ export const seedInvoices: Invoice[] = [
   {
     id: "inv-003",
     kind: "invoice",
-    number: "NTS/INV/2026/09/002",
+    number: "NSD/INV/2026/09/002",
     seq: 2,
     quotationId: undefined,
     clientId: "cli-004",
@@ -276,7 +276,7 @@ export const seedReceipts: Receipt[] = [
   {
     id: "rcp-001",
     kind: "receipt",
-    number: "NTS/KWT/2026/08/001",
+    number: "NSD/KWT/2026/08/001",
     seq: 1,
     paymentId: "pay-001",
     invoiceId: "inv-001",
@@ -292,7 +292,7 @@ export const seedReceipts: Receipt[] = [
   {
     id: "rcp-002",
     kind: "receipt",
-    number: "NTS/KWT/2026/09/001",
+    number: "NSD/KWT/2026/09/001",
     seq: 1,
     paymentId: "pay-002",
     invoiceId: "inv-003",
@@ -343,8 +343,8 @@ export const seedSettings: CompanySettings = {
     "Harga berlaku sampai tanggal kedaluwarsa di atas. Garansi implementasi 90 hari setelah go-live.",
   defaultNotesInvoice: "Mohon cantumkan nomor invoice pada berita transfer.",
   banks: [
-    { id: "bank-001", bank: "BCA", number: "123-456-7890", holder: "PT. PT. SMKarier Inovasi Digital" },
-    { id: "bank-002", bank: "Bank Mandiri", number: "112-000-9876543", holder: "PT. PT. SMKarier Inovasi Digital" },
+    { id: "bank-001", bank: "BCA", number: "123-456-7890", holder: "PT. SMKarier Inovasi Digital" },
+    { id: "bank-002", bank: "Bank Mandiri", number: "112-000-9876543", holder: "PT. SMKarier Inovasi Digital" },
   ],
 };
 

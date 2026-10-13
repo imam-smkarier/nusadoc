@@ -41,7 +41,7 @@ export function InvoiceSheet({
         settings={settings}
         title="INVOICE"
         docLabel="Tagihan · Nusadoc"
-        number={isPreview ? "NTS/INV/…/—" : invoice.number}
+        number={isPreview ? "NSD/INV/…/—" : invoice.number}
         dateLine={`Tanggal ${formatDateShort(invoice.date)} · Jatuh Tempo ${formatDateShort(invoice.dueDate)}`}
         badge={
           <Badge tone={badgeInfo.tone} dot>
@@ -54,7 +54,7 @@ export function InvoiceSheet({
         partyLabel="Kepada Yth."
         client={client}
         metaRows={[
-          { label: "Nomor", value: isPreview ? "NTS/INV/…/—" : invoice.number },
+          { label: "Nomor", value: isPreview ? "NSD/INV/…/—" : invoice.number },
           { label: "Tanggal", value: formatDateShort(invoice.date) },
           { label: "Jatuh Tempo", value: formatDateShort(invoice.dueDate) },
           ...(invoice.terminLabel ? [{ label: "Termin", value: `${invoice.terminLabel} (${invoice.terminPct}%)` }] : []),

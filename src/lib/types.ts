@@ -74,7 +74,7 @@ export type QuotationStatus = "draft" | "sent" | "approved" | "rejected" | "expi
 export interface Quotation {
   id: string;
   kind: "quotation";
-  number: string; // NTS/QUO/2026/09/001
+  number: string; // NSD/QUO/2026/09/001
   seq: number; // 1
   status: QuotationStatus;
   clientId: string;
@@ -96,7 +96,7 @@ export type InvoiceStatus = "sent" | "partial" | "paid" | "overdue";
 export interface Invoice {
   id: string;
   kind: "invoice";
-  number: string; // NTS/INV/2026/09/001-T1 (dari penawaran) atau NTS/INV/2026/09/002 (langsung)
+  number: string; // NSD/INV/2026/09/001-T1 (dari penawaran) atau NSD/INV/2026/09/002 (langsung)
   seq: number;
   terminIndex?: number; // 1,2,3.. jika lahir dari penawaran
   terminLabel?: string; // "Uang Muka (DP) 50%"
@@ -129,7 +129,7 @@ export interface Payment {
 export interface Receipt {
   id: string;
   kind: "receipt";
-  number: string; // NTS/KWT/2026/09/001
+  number: string; // NSD/KWT/2026/09/001
   seq: number;
   paymentId: string;
   invoiceId: string; // referensi induk

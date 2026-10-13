@@ -36,7 +36,7 @@ export function QuotationSheet({
         settings={settings}
         title="PENAWARAN"
         docLabel="Quotation · Nusadoc"
-        number={isPreview ? "NTS/QUO/…/—" : quotation.number}
+        number={isPreview ? "NSD/QUO/…/—" : quotation.number}
         dateLine={`Tanggal ${formatDateShort(quotation.date)} · Berlaku s.d. ${formatDateShort(quotation.validUntil)}`}
         badge={
           <Badge tone={badgeInfo.tone} dot>
@@ -49,7 +49,7 @@ export function QuotationSheet({
         partyLabel="Kepada Yth."
         client={client}
         metaRows={[
-          { label: "Nomor", value: isPreview ? "NTS/QUO/…/—" : quotation.number },
+          { label: "Nomor", value: isPreview ? "NSD/QUO/…/—" : quotation.number },
           { label: "Tanggal", value: formatDateShort(quotation.date) },
           { label: "Masa Berlaku", value: `s.d. ${formatDateShort(quotation.validUntil)}` },
         ]}

@@ -6,6 +6,19 @@ import { isResponse, requirePermission } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/db";
 import type { CompanySettings } from "@/lib/types";
 
+/** GET — profil perusahaan milik organisasi user. */
+export async function GET() {
+  const user = await requirePermission("settings.update");
+  if (isResponse(user)) return user;
+
+  const row = await prisma.companySettings.findUnique({
+    where: { organizationId: user.organizationId },
+  });
+  if (!row) return NextResponse.json({ error: "Pengaturan belum dibuat" }, { status: 404 });
+  return NextResponse.json(mapSettings(row));
+}
+
+/** PUT — simpan profil perusahaan organisasi user (upsert per org). */
 export async function PUT(req: NextRequest) {
   const user = await requirePermission("settings.update");
   if (isResponse(user)) return user;
@@ -19,9 +32,13 @@ export async function PUT(req: NextRequest) {
     defaultNotesInvoice: String(s.defaultNotesInvoice ?? ""), banks: (s.banks ?? []) as unknown as Prisma.InputJsonValue,
   };
   const row = await prisma.companySettings.upsert({
-    where: { id: "main" },
+    where: { organizationId: user.organizationId },
     update: data,
-    create: { id: "main", ...data },
+    create: {
+      id: `cs_${user.organizationId}`,
+      organizationId: user.organizationId,
+      ...data,
+    },
   });
   await logAudit(user.email, "settings.update", "CompanySettings", row.id);
   return NextResponse.json(mapSettings(row));

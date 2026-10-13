@@ -64,7 +64,7 @@ export function QuotationBuilder() {
     () => ({
       id: "draft",
       kind: "quotation",
-      number: "NTS/QUO/…/—",
+      number: "NSD/QUO/…/—",
       seq: 0,
       status: "draft",
       clientId: doc.clientId ?? "",
@@ -109,7 +109,7 @@ export function QuotationBuilder() {
   return (
     <BuilderShell
       title="Buat Penawaran"
-      subtitle={`Nomor otomatis: NTS/QUO/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, "0")}/… — diterbitkan saat final`}
+      subtitle={`Nomor otomatis: NSD/QUO/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, "0")}/… — diterbitkan saat final`}
       savedAt={restored ? savedAt : null}
       onDiscard={restored && savedAt ? clear : undefined}
       onCancel={() => router.push("/penawaran")}

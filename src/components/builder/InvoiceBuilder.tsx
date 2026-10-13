@@ -98,7 +98,7 @@ export function InvoiceBuilder() {
     () => ({
       id: "draft",
       kind: "invoice",
-      number: doc.mode === "from-quotation" && parent ? `NTS/INV/…/${String(parent.seq).padStart(3, "0")}-T?` : "NTS/INV/…/—",
+      number: doc.mode === "from-quotation" && parent ? `NSD/INV/…/${String(parent.seq).padStart(3, "0")}-T?` : "NSD/INV/…/—",
       seq: 0,
       terminIndex: doc.mode === "from-quotation" ? 1 : undefined,
       terminLabel,

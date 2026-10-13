@@ -11,10 +11,12 @@ export async function POST(req: NextRequest) {
   const parsed = parseOr400(clientInput, await req.json());
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
-  const count = await prisma.client.count();
+  // Kode klien unik PER ORGANISASI (CL-001 di org A ≠ CL-001 di org B)
+  const count = await prisma.client.count({ where: { organizationId: user.organizationId } });
   const client = await prisma.client.create({
     data: {
       id: `cli_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+      organizationId: user.organizationId,
       code: `CL-${String(count + 1).padStart(3, "0")}`,
       name: String(body.name),
       address: String(body.address),

@@ -70,6 +70,10 @@ export async function requirePermission(action: string): Promise<User | NextResp
 export async function ensureAdminUser(): Promise<void> {
   const count = await prisma.user.count();
   if (count > 0) return;
+
+  const { ensureDemoOrganization, DEMO_ORG_ID } = await import("./seedDb");
+  await ensureDemoOrganization(prisma);
+
   const { hashPassword } = await import("./password");
   const password = process.env.ADMIN_INITIAL_PASSWORD || "docflow-admin";
   const hash = hashPassword(password);
@@ -84,6 +88,6 @@ export async function ensureAdminUser(): Promise<void> {
       : []),
   ];
   for (const u of users) {
-    await prisma.user.create({ data: { ...u, passwordHash: hash } });
+    await prisma.user.create({ data: { ...u, organizationId: DEMO_ORG_ID, passwordHash: hash } });
   }
 }

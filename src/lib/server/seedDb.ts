@@ -5,12 +5,28 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 /**
  * Isi database dengan data demo bila masih kosong (idempotent).
  * Bukan untuk production — production mulai dengan database bersih.
+ * Data demo dimiliki workspace "org_demo" (plan hakguna = tanpa batas).
  */
+
+export const DEMO_ORG_ID = "org_demo";
+export const DEMO_ORG_NAME = "Demo Workspace";
+
+/** Pastikan workspace demo ada (idempotent) — dipanggil sebelum seed. */
+export async function ensureDemoOrganization(db: PrismaClient): Promise<void> {
+  const org = await db.organization.findUnique({ where: { id: DEMO_ORG_ID } });
+  if (!org) {
+    await db.organization.create({
+      data: { id: DEMO_ORG_ID, name: DEMO_ORG_NAME, plan: "hakguna" },
+    });
+  }
+}
+
 export async function seedIfEmpty(db: PrismaClient): Promise<boolean> {
+  await ensureDemoOrganization(db);
   const [clients, quotations, invoices] = await Promise.all([
-    db.client.count(),
-    db.quotation.count(),
-    db.invoice.count(),
+    db.client.count({ where: { organizationId: DEMO_ORG_ID } }),
+    db.quotation.count({ where: { organizationId: DEMO_ORG_ID } }),
+    db.invoice.count({ where: { organizationId: DEMO_ORG_ID } }),
   ]);
   if (clients > 0 || quotations > 0 || invoices > 0) return false;
   await seedDatabase(db);
@@ -18,13 +34,15 @@ export async function seedIfEmpty(db: PrismaClient): Promise<boolean> {
 }
 
 export async function seedDatabase(db: PrismaClient): Promise<void> {
+  await ensureDemoOrganization(db);
+  const orgId = DEMO_ORG_ID;
   const s = buildSeedData();
 
   await db.$transaction([
     ...s.clients.map((c) =>
       db.client.create({
         data: {
-          id: c.id, code: c.code, name: c.name, address: c.address, city: c.city,
+          id: c.id, organizationId: orgId, code: c.code, name: c.name, address: c.address, city: c.city,
           npwp: c.npwp, picName: c.picName, picPhone: c.picPhone, picEmail: c.picEmail,
           createdAt: asDate(c.createdAt),
         },
@@ -33,7 +51,7 @@ export async function seedDatabase(db: PrismaClient): Promise<void> {
     ...s.quotations.map((q) =>
       db.quotation.create({
         data: {
-          id: q.id, number: q.number, seq: q.seq, status: q.status, clientId: q.clientId,
+          id: q.id, organizationId: orgId, number: q.number, seq: q.seq, status: q.status, clientId: q.clientId,
           subject: q.subject, date: asDate(q.date), validUntil: asDate(q.validUntil),
           items: q.items as unknown as Prisma.InputJsonObject, ppnEnabled: q.tax.ppnEnabled, ppnRate: q.tax.ppnRate,
           pph23Enabled: q.tax.pph23Enabled, pph23Rate: q.tax.pph23Rate, notes: q.notes ?? "",
@@ -44,7 +62,7 @@ export async function seedDatabase(db: PrismaClient): Promise<void> {
     ...s.invoices.map((i) =>
       db.invoice.create({
         data: {
-          id: i.id, number: i.number, seq: i.seq, terminIndex: i.terminIndex ?? null,
+          id: i.id, organizationId: orgId, number: i.number, seq: i.seq, terminIndex: i.terminIndex ?? null,
           terminLabel: i.terminLabel ?? null, terminPct: i.terminPct ?? null,
           quotationId: i.quotationId ?? null, clientId: i.clientId, subject: i.subject,
           date: asDate(i.date), dueDate: asDate(i.dueDate), items: i.items as unknown as Prisma.InputJsonObject,
@@ -58,7 +76,7 @@ export async function seedDatabase(db: PrismaClient): Promise<void> {
     ...s.payments.map((p) =>
       db.payment.create({
         data: {
-          id: p.id, invoiceId: p.invoiceId, date: asDate(p.date), amount: BigInt(p.amount),
+          id: p.id, organizationId: orgId, invoiceId: p.invoiceId, date: asDate(p.date), amount: BigInt(p.amount),
           method: p.method, note: p.note ?? "",
         },
       })
@@ -66,16 +84,16 @@ export async function seedDatabase(db: PrismaClient): Promise<void> {
     ...s.receipts.map((r) =>
       db.receipt.create({
         data: {
-          id: r.id, number: r.number, seq: r.seq, paymentId: r.paymentId, invoiceId: r.invoiceId,
+          id: r.id, organizationId: orgId, number: r.number, seq: r.seq, paymentId: r.paymentId, invoiceId: r.invoiceId,
           clientId: r.clientId, amount: BigInt(r.amount), method: r.method, date: asDate(r.date),
           forPaymentOf: r.forPaymentOf, token: r.token, hash: r.hash, issuedAt: new Date(r.issuedAt),
         },
       })
     ),
-    ...s.templates.map((t) => db.itemTemplate.create({ data: { id: t.id, name: t.name, items: t.items as unknown as Prisma.InputJsonObject } })),
+    ...s.templates.map((t) => db.itemTemplate.create({ data: { id: t.id, organizationId: orgId, name: t.name, items: t.items as unknown as Prisma.InputJsonObject } })),
     db.companySettings.create({
       data: {
-        id: "main", name: s.settings.name, tagline: s.settings.tagline, address: s.settings.address,
+        id: "main", organizationId: orgId, name: s.settings.name, tagline: s.settings.tagline, address: s.settings.address,
         city: s.settings.city, phone: s.settings.phone, email: s.settings.email,
         website: s.settings.website, npwp: s.settings.npwp, signName: s.settings.signName,
         signTitle: s.settings.signTitle, signCity: s.settings.signCity,

@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
   const row = await prisma.itemTemplate.create({
     data: {
       id: `tpl_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+      organizationId: user.organizationId,
       name: String(name), items,
     },
   });

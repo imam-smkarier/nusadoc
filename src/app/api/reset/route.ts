@@ -5,7 +5,7 @@ import { clearDatabase, seedDatabase } from "@/lib/server/seedDb";
 import { prisma } from "@/lib/server/db";
 
 /**
- * Reset data demo — HANYA development, wajib role admin.
+ * Reset data demo workspace — HANYA development, wajib role admin.
  * Endpoint ini tidak boleh tersedia di production.
  */
 export async function POST() {
@@ -18,5 +18,5 @@ export async function POST() {
 
   await clearDatabase(prisma);
   await seedDatabase(prisma);
-  return NextResponse.json(await loadAllData(prisma));
+  return NextResponse.json(await loadAllData(prisma, user.organizationId));
 }

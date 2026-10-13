@@ -3,9 +3,9 @@ import { computeTotals } from "@/lib/calc";
 import type { LineItem, TaxConfig } from "@/lib/types";
 import { prisma } from "./db";
 
-/** Kunci snapshot penerbit + klien saat terbit. */
-export async function buildIssuerSnapshot(): Promise<DocSnapshot["issuer"]> {
-  const s = await prisma.companySettings.findFirst();
+/** Kunci snapshot penerbit + klien saat terbit (per organisasi). */
+export async function buildIssuerSnapshot(organizationId: string): Promise<DocSnapshot["issuer"]> {
+  const s = await prisma.companySettings.findUnique({ where: { organizationId } });
   return {
     name: s?.name ?? "", tagline: s?.tagline ?? "", address: s?.address ?? "", city: s?.city ?? "",
     phone: s?.phone ?? "", email: s?.email ?? "", website: s?.website ?? "", npwp: s?.npwp ?? "",

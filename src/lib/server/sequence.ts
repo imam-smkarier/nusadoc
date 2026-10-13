@@ -26,23 +26,23 @@ export async function allocateCounter(tx: Tx, key: string, initValue = 0): Promi
 const pad3 = (n: number) => String(n).padStart(3, "0");
 
 export function quotationNumber(y: string, m: string, seq: number): string {
-  return `NTS/QUO/${y}/${m}/${pad3(seq)}`;
+  return `NSD/QUO/${y}/${m}/${pad3(seq)}`;
 }
 
 export function directInvoiceNumber(y: string, m: string, seq: number): string {
-  return `NTS/INV/${y}/${m}/${pad3(seq)}`;
+  return `NSD/INV/${y}/${m}/${pad3(seq)}`;
 }
 
 /**
  * Identitas invoice termin diambil dari nomor penawaran (immutable):
- * NTS/QUO/2026/08/001 + termin 2 → NTS/INV/2026/08/001-T2
+ * NSD/QUO/2026/08/001 + termin 2 → NSD/INV/2026/08/001-T2
  * (memperbaiki collision lintas bulan yang dilaporkan audit).
  */
 export function terminInvoiceNumber(quotationNumber: string, terminIndex: number): string {
   const [, , y, m, seq] = quotationNumber.split("/");
-  return `NTS/INV/${y}/${m}/${seq}-T${terminIndex}`;
+  return `NSD/INV/${y}/${m}/${seq}-T${terminIndex}`;
 }
 
 export function receiptNumber(y: string, m: string, seq: number): string {
-  return `NTS/KWT/${y}/${m}/${pad3(seq)}`;
+  return `NSD/KWT/${y}/${m}/${pad3(seq)}`;
 }

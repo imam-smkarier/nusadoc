@@ -37,7 +37,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 
   const doc = quotation ?? invoice ?? receipt!;
   const clientRow = await prisma.client.findUnique({ where: { id: doc.clientId } });
-  const settingsRow = await prisma.companySettings.findFirst();
+  // Issuer dari PENGATURAN organisasi pemilik dokumen (multi-tenant), snapshot tetap sumber utama di UI.
+  const settingsRow = await prisma.companySettings.findUnique({
+    where: { organizationId: doc.organizationId },
+  });
 
   let hashPayload: Record<string, unknown> | null = null;
   let kind: "quotation" | "invoice" | "receipt" = "quotation";

@@ -3,10 +3,10 @@ import type { Invoice, Payment, Quotation, Receipt } from "./types";
 
 /**
  * Penomoran dokumen:
- *   Penawaran  NTS/QUO/2026/09/001
- *   Invoice    NTS/INV/2026/09/001-T1  (dari penawaran seq 001, termin 1)
- *              NTS/INV/2026/09/002     (langsung / repeat order)
- *   Kwitansi   NTS/KWT/2026/09/001
+ *   Penawaran  NSD/QUO/2026/09/001
+ *   Invoice    NSD/INV/2026/09/001-T1  (dari penawaran seq 001, termin 1)
+ *              NSD/INV/2026/09/002     (langsung / repeat order)
+ *   Kwitansi   NSD/KWT/2026/09/001
  */
 
 const pad = (n: number, w = 3) => String(n).padStart(w, "0");
@@ -32,8 +32,8 @@ export function nextQuotationNumber(quotations: Quotation[], now = new Date()): 
 
 export function nextQuotationNumberFor(numbers: string[], now = new Date()): { number: string; seq: number } {
   const [y, m] = ym(now);
-  const seq = nextSeq(numbers, "NTS/QUO", y, m);
-  return { number: `NTS/QUO/${y}/${m}/${pad(seq)}`, seq };
+  const seq = nextSeq(numbers, "NSD/QUO", y, m);
+  return { number: `NSD/QUO/${y}/${m}/${pad(seq)}`, seq };
 }
 
 /**
@@ -63,10 +63,10 @@ export function nextInvoiceNumberFor(
 ): { number: string; seq: number } {
   const [y, m] = ym(now);
   if (quotation && terminIndex) {
-    return { number: `NTS/INV/${y}/${m}/${pad(quotation.seq)}-T${terminIndex}`, seq: quotation.seq };
+    return { number: `NSD/INV/${y}/${m}/${pad(quotation.seq)}-T${terminIndex}`, seq: quotation.seq };
   }
-  const seq = nextSeq(directNumbers, "NTS/INV", y, m);
-  return { number: `NTS/INV/${y}/${m}/${pad(seq)}`, seq };
+  const seq = nextSeq(directNumbers, "NSD/INV", y, m);
+  return { number: `NSD/INV/${y}/${m}/${pad(seq)}`, seq };
 }
 
 export function nextTerminIndex(invoices: Invoice[], quotationId?: string): number {
@@ -80,8 +80,8 @@ export function nextReceiptNumber(receipts: Receipt[], now = new Date()): { numb
 
 export function nextReceiptNumberFor(numbers: string[], now = new Date()): { number: string; seq: number } {
   const [y, m] = ym(now);
-  const seq = nextSeq(numbers, "NTS/KWT", y, m);
-  return { number: `NTS/KWT/${y}/${m}/${pad(seq)}`, seq };
+  const seq = nextSeq(numbers, "NSD/KWT", y, m);
+  return { number: `NSD/KWT/${y}/${m}/${pad(seq)}`, seq };
 }
 
 export function paymentSummary(invoice: Invoice, payments: Payment[]) {

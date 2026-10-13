@@ -6,7 +6,7 @@ import { isResponse, requireUser } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 
-/** Satu panggilan awal: seluruh data + autoseed demo bila database masih kosong. */
+/** Satu panggilan awal: seluruh data MILIK ORGANISASI user + autoseed demo dev bila kosong. */
 export async function GET() {
   const user = await requireUser();
   if (isResponse(user)) return user;
@@ -14,7 +14,7 @@ export async function GET() {
     if (process.env.NODE_ENV !== "production") {
       await seedIfEmpty(prisma);
     }
-    const data = await loadAllData(prisma);
+    const data = await loadAllData(prisma, user.organizationId);
     return NextResponse.json(data);
   } catch (e) {
     console.error("bootstrap gagal:", e);
