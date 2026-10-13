@@ -100,7 +100,7 @@ Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi 
 | Status | `Draft` / `Terkirim` / `Disetujui` / `Ditolak` / `Kedaluwarsa` |
 | Kedaluwarsa | Dihitung otomatis bila status masih Terkirim dan tanggal berlaku telah lewat |
 | Invoice | Tombol/aksi Buat Invoice hanya aktif setelah Penawaran Disetujui |
-| Penomoran | `NTS/QUO/YYYY/MM/NNN` |
+| Penomoran | `NSD/QUO/YYYY/MM/NNN` |
 | Finalisasi | Nomor, token, dan hash dibuat server-side saat dokumen diterbitkan |
 
 ### 4.3 Invoice
@@ -110,8 +110,8 @@ Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi 
 | Sumber | Dari Penawaran Disetujui atau dibuat langsung untuk repeat order |
 | Carry-over | Invoice dari penawaran membawa klien dan item penawaran; nilai item diskalakan sesuai persentase termin |
 | Termin | Satu penawaran dapat menerbitkan banyak termin — DP, progres, retensi, pelunasan, atau kustom |
-| Penomoran turunan | `NTS/INV/YYYY/MM/<seq-penawaran>-T<nomor-termin>` |
-| Penomoran langsung | `NTS/INV/YYYY/MM/NNN` |
+| Penomoran turunan | `NSD/INV/YYYY/MM/<seq-penawaran>-T<nomor-termin>` |
+| Penomoran langsung | `NSD/INV/YYYY/MM/NNN` |
 | Status | `Terkirim` / `Terbayar Sebagian` / `Lunas` / `Jatuh Tempo` |
 | Status manual | **Dilarang.** Status dihitung dari total kwitansi dibanding total invoice dan tanggal jatuh tempo |
 | Referensi induk | Invoice dari penawaran wajib menampilkan nomor penawaran di badan dokumen |
@@ -123,7 +123,7 @@ Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi 
 | Pembayaran parsial | Diperbolehkan selama tidak melebihi sisa tagihan |
 | Kwitansi | Tercipta otomatis saat pembayaran dicatat; tidak ada draft |
 | Finalisasi | Kwitansi final sejak terbit; nomor, token, hash tidak boleh diubah |
-| Penomoran | `NTS/KWT/YYYY/MM/NNN` |
+| Penomoran | `NSD/KWT/YYYY/MM/NNN` |
 | Referensi induk | Kwitansi wajib menampilkan nomor invoice di badan dokumen |
 | Status invoice | Perubahan status hanya mengikuti akumulasi kwitansi, tidak dapat dipilih admin |
 
@@ -290,6 +290,15 @@ Lihat diagram visual: [docflow-architecture.svg](./assets/docflow-architecture.s
 | 2026-09-28 | Snapshot immutable di kunci saat terbit (issuer/client/totals) | Dokumen historis tidak boleh berubah oleh edit master |
 | 2026-09-28 | Penomoran via tabel counter (FOR UPDATE) + nomor termin dari identitas penawaran | Aman multi-user, tanpa collision lintas bulan |
 | 2026-09-28 | RBAC: admin/finance/sales/viewer dengan permission per-fitur | Pemisahan tugas dasar untuk operasi tim kecil |
+| 2026-09-29 | Pembayaran langganan via Midtrans (PT. SMKarier Inovasi Digital) | Mendukung checkout online otomatis (Bulanan & Hak Guna) dengan Snap & webhook signature SHA-512 |
+| 2026-09-29 | Standarisasi brand asset resmi dari `nusadoc-brand-bundle` | Favicon proper multi-size ICO (48/32/16), 512px icon, full-color & dark variants, symbol square |
+| 2026-09-30 | Prefix nomor dokumen distandardkan ke `NSD/` seluruh sistem (server, fallback client, seed, filter counter) | Konsistensi brand Nusadoc; rebrand sebelumnya hanya mengubah server, ditemukan oleh test suite |
+| 2026-09-30 | PDF server-side TIDAK wajib object storage — cukup filesystem lokal server | Target deployment Hostinger Business (tanpa S3); browser print tetap jalan; PDF server-side opsional via @react-pdf/renderer (tanpa Chromium) |
+| 2026-09-30 | Delivery email/SMTP & WA (Fonnte/WaBlas) dikonfigurasi dari admin panel, kredensial terenkripsi AES-256-GCM | Setup tanpa deploy ulang; kredensial tidak pernah keluar plaintext dari server |
+| 2026-10-02 | Transformasi SaaS Multi-Tenant: tabel Organization, isolasi workspace penuh | Setiap perusahaan memiliki data klien, dokumen, dan pengaturan terisolasi mandiri |
+| 2026-10-02 | Paket Lite Rp 50.000 / bulan dengan kuota 25 dokumen / bulan | Pilihan paling terjangkau bagi freelancer dan bisnis rintisan mikro |
+| 2026-10-02 | Registrasi mandiri `/daftar` dengan masa trial gratis 30 hari tanpa kartu kredit | Mendorong akuisisi pengguna tanpa gesekan (PLG); akun expired menjadi read-only |
+| 2026-10-02 | Nusadoc Mobile (Flutter) dengan TTE Biometrik (Face ID/Sidik Jari) via Secure Enclave | Persetujuan dokumen cepat dalam satu genggaman untuk direksi/pemilik bisnis |
 
 ---
 

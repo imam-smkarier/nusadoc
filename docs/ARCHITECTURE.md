@@ -91,10 +91,11 @@ Endpoint saat ini:
 | `POST /api/payments` | Payment + kwitansi transaksi | Belum auth |
 | `POST /api/templates` | Simpan template | Belum auth |
 | `DELETE /api/templates/[id]` | Hapus template | Belum auth |
-| `PUT /api/settings` | Simpan pengaturan | Belum auth |
-| `POST /api/reset` | Hapus & seed demo | Belum auth; dev only |
-
-> Endpoint write tanpa auth adalah **blocker production**, bukan feature yang selesai. Jangan expose aplikasi ini ke publik/internet sebelum middleware auth dan authorization ada.
+| `PUT /api/settings` | Simpan pengaturan | Role admin |
+| `POST /api/reset` | Hapus & seed demo | Role admin; dev only |
+| `POST /api/subscription/checkout` | Sesi checkout langganan Midtrans Snap | Publik / In-App |
+| `POST /api/webhooks/midtrans` | Webhook notifikasi pembayaran Midtrans (SHA-512) | Publik (Signature-verified) |
+| `GET /api/subscription/status` | Status paket & lisensi aktif + histori | Publik / Sesi |
 
 ### Database
 
@@ -107,6 +108,8 @@ Prisma schema menyimpan:
 - `Receipt`: hasil penerbitan final, terkait payment melalui FK `paymentId`.
 - `ItemTemplate`: kumpulan line item reusable.
 - `CompanySettings`: profil penerbit, bank, penandatangan, default.
+- `Subscription`: paket langganan/lisensi (Bulanan & Hak Guna), status aktif, nominal, token Snap, dan masa berlaku.
+- `SubscriptionLog`: audit trail event Midtrans (`snap.created`, `payment.settled`, `payment.expired`).
 
 ### Mengapa item disimpan JSON?
 
@@ -179,3 +182,7 @@ Target akhirnya Hostinger Node.js yang mendukung Node 20+, MySQL, SSH/Node.js Ap
 5. jalankan backup dan observability.
 
 Detail aktual dan gate deployment ada di [CURRENT_STATE.md](./CURRENT_STATE.md).
+
+## 9. Ekstensi Mobile (Flutter) & TTE Biometrik
+
+Cetak biru arsitektur mobile companion, skema pendaftaran perangkat (`DeviceSigner`), dan protokol persetujuan biometrik hardware (Secure Enclave / Android Keystore) didokumentasikan di [MOBILE_APP_CONCEPT.md](./MOBILE_APP_CONCEPT.md).
