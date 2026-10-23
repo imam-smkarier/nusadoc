@@ -52,20 +52,10 @@ export async function POST(req: NextRequest) {
       const currentPeriodEnd =
         subscription.interval === "monthly" ? new Date(now.getTime() + 30 * 24 * 3600 * 1000) : null;
 
-      // Cari atau link organization ID jika belum terisi
-      let orgId = subscription.organizationId;
-      let userId = subscription.userId;
-
-      if (!orgId) {
-        const matchedUser = await prisma.user.findUnique({
-          where: { email: subscription.customerEmail.toLowerCase() },
-          select: { id: true, organizationId: true },
-        });
-        if (matchedUser) {
-          orgId = matchedUser.organizationId;
-          userId = matchedUser.id;
-        }
-      }
+      // Workspace hanya dari order itu sendiri (diikat saat checkout oleh admin yang login) —
+      // jangan menautkan lewat email pembeli, karena email bisa diketik siapa saja.
+      const orgId = subscription.organizationId;
+      const userId = subscription.userId;
 
       await prisma.$transaction(async (tx) => {
         // 1. Update subscription status

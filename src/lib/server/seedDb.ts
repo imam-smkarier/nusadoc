@@ -104,15 +104,19 @@ export async function seedDatabase(db: PrismaClient): Promise<void> {
   ]);
 }
 
-export async function clearDatabase(db: PrismaClient): Promise<void> {
+/** Hapus data dokumen SATU workspace — tidak pernah menyentuh tenant lain. */
+export async function clearDatabase(db: PrismaClient, organizationId: string): Promise<void> {
+  // Prisma membaca `organizationId: undefined` sebagai "tanpa filter" = hapus semua tenant.
+  if (!organizationId) throw new Error("clearDatabase butuh organizationId");
+  const where = { organizationId };
   await db.$transaction([
     // kwitansi dulu — FK receipt.paymentId menunjuk payment
-    db.receipt.deleteMany(),
-    db.payment.deleteMany(),
-    db.invoice.deleteMany(),
-    db.quotation.deleteMany(),
-    db.client.deleteMany(),
-    db.itemTemplate.deleteMany(),
-    db.companySettings.deleteMany(),
+    db.receipt.deleteMany({ where }),
+    db.payment.deleteMany({ where }),
+    db.invoice.deleteMany({ where }),
+    db.quotation.deleteMany({ where }),
+    db.client.deleteMany({ where }),
+    db.itemTemplate.deleteMany({ where }),
+    db.companySettings.deleteMany({ where }),
   ]);
 }

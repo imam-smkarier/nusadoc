@@ -13,8 +13,12 @@ const ACCESS_TOKEN_TTL_SEC = 2 * 60 * 60; // 2 jam
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 hari
 
 function getJwtSecret(): Buffer {
-  const raw = process.env.MOBILE_JWT_SECRET || process.env.DATABASE_URL || "nusadoc-mobile-secret-seed";
-  return crypto.createHash("sha256").update(raw).digest();
+  const raw = process.env.MOBILE_JWT_SECRET;
+  // Fallback yang bisa ditebak = siapa pun bisa menerbitkan token untuk user tenant mana pun.
+  if (!raw && process.env.NODE_ENV === "production") {
+    throw new Error("MOBILE_JWT_SECRET wajib diset di production");
+  }
+  return crypto.createHash("sha256").update(raw || `dev:${process.env.DATABASE_URL ?? ""}`).digest();
 }
 
 function base64UrlEncode(data: Buffer | string): string {
@@ -64,7 +68,8 @@ export function verifyMobileJwt(token: string): MobileJwtPayload | null {
   const data = `${header}.${body}`;
   const expectedSig = base64UrlEncode(crypto.createHmac("sha256", getJwtSecret()).update(data).digest());
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+  const given = Buffer.from(signature);
+  if (given.length !== expectedSig.length || !crypto.timingSafeEqual(given, Buffer.from(expectedSig))) {
     return null;
   }
 

@@ -21,6 +21,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Kunci publik & PIN hanya boleh dipasang pada perangkat milik user ini sendiri.
+    const existing = await prisma.deviceSigner.findUnique({ where: { deviceId: auth.deviceId }, select: { userId: true } });
+    if (existing && existing.userId !== auth.user.id) {
+      return NextResponse.json(
+        { ok: false, error: "Perangkat ini sudah terdaftar untuk akun lain" },
+        { status: 409 }
+      );
+    }
+
     const pinHash = pin ? hashPassword(pin) : undefined;
 
     const device = await prisma.deviceSigner.upsert({

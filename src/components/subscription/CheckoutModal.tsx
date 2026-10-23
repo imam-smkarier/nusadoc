@@ -64,6 +64,11 @@ export function CheckoutModal({
       });
 
       const data = await res.json();
+      if (data.code === "LOGIN_REQUIRED") {
+        // Paket selalu melekat ke workspace — pembeli harus punya akun & login dulu.
+        router.push(`/daftar?plan=${encodeURIComponent(plan)}`);
+        return;
+      }
       if (!res.ok || !data.ok) {
         throw new Error(data.error || "Gagal membuat sesi pembayaran Midtrans");
       }
@@ -191,7 +196,7 @@ export function CheckoutModal({
                 className="mt-1 w-full rounded-lg border border-line bg-white px-3.5 py-2 text-[13.5px] text-navy placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
               />
               <p className="mt-1 text-[11px] text-slate-500">
-                Bukti pembayaran dan akses akun akan dikirimkan ke email ini.
+                Bukti pembayaran dari Midtrans dikirim ke email ini. Paket aktif di workspace yang sedang Anda gunakan.
               </p>
             </div>
 

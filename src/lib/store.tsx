@@ -2,10 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { computeTotals } from "./calc";
-import { computeDocumentHash } from "./hash";
-import { nextInvoiceNumber, nextQuotationNumber, nextReceiptNumber, nextTerminIndex } from "./numbering";
 import { buildSeedData } from "./seed";
-import { generateToken } from "./token";
 import type {
   AppData,
   Client,
@@ -83,14 +80,63 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    ...init,
-  });
-  if (!res.ok) throw new Error(`${path} → ${res.status}`);
+/** Server tidak terjangkau (jaringan putus / DB mati) — satu-satunya kondisi boleh fallback lokal. */
+export class NetworkError extends Error {}
+
+/**
+ * Server menjawab dengan penolakan (validasi 422, hak akses 403, kuota/langganan 402, …).
+ * Pesan server ditampilkan apa adanya; `code` mis. DOCUMENT_QUOTA_EXCEEDED.
+ */
+export class ApiError extends Error {
+  constructor(message: string, public status: number, public code?: string) {
+    super(message);
+  }
+}
+
+export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      ...init,
+    });
+  } catch {
+    throw new NetworkError("Server tidak terjangkau");
+  }
+  if (res.status === 503) throw new NetworkError("Database tidak terjangkau");
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+    throw new ApiError(body.error || `Permintaan gagal (${res.status})`, res.status, body.code);
+  }
   return (await res.json()) as T;
+}
+
+/**
+ * Penolakan server selalu diteruskan ke pemanggil. Hanya saat server tak terjangkau:
+ * aksi non-finansial jatuh ke mode lokal, aksi finansial gagal tertutup — dokumen
+ * tidak boleh "terbit" hanya di browser (dan kuota 402 tidak boleh terakali tampilan).
+ */
+export async function guarded<T>(
+  financial: boolean,
+  call: () => Promise<T>,
+  fallback: () => T,
+  onOffline: () => void
+): Promise<T> {
+  try {
+    return await call();
+  } catch (e) {
+    if (!(e instanceof NetworkError)) throw e;
+    console.warn("Server tidak terjangkau:", e);
+    onOffline();
+    if (financial) throw new Error("Server tidak terjangkau — dokumen tidak diterbitkan. Coba lagi saat koneksi pulih.");
+    return fallback();
+  }
+}
+
+/** Aksi yang hanya sah di server — tanpa padanan lokal. */
+function serverOnly(): never {
+  throw new Error("Server tidak terjangkau — aksi ini membutuhkan koneksi ke server.");
 }
 
 /** Muat data terakhir dari localStorage — hanya untuk mode fallback mock. */
@@ -140,20 +186,15 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [data, ready, localMode]);
 
-  /** Jalankan lewat API; bila gagal, eksekusi fallback lokal agar demo tetap hidup. */
-  const guard = useCallback(async <T,>(financial: boolean, call: () => Promise<T>, fallback: () => T): Promise<T> => {
-    try {
-      return await call();
-    } catch (e) {
-      console.warn("Aksi API gagal — fallback lokal:", e);
-      setLocalMode(true);
-      return fallback();
-    }
-  }, []);
+  const guard = useCallback(
+    <T,>(financial: boolean, call: () => Promise<T>, fallback: () => T): Promise<T> =>
+      guarded(financial, call, fallback, () => setLocalMode(true)),
+    []
+  );
 
   const mutate = useCallback((fn: (d: AppData) => AppData) => setData((d) => fn(d)), []);
 
-  /* ── fallback lokal (mock): logika lama ── */
+  /* ── fallback lokal (mock) — hanya untuk data master non-finansial ── */
 
   const fallbackAddClient = useCallback(
     (c: Omit<Client, "id" | "code" | "createdAt">): Client => {
@@ -165,67 +206,6 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       };
       mutate((d) => ({ ...d, clients: [...d.clients, client] }));
       return client;
-    },
-    [mutate]
-  );
-
-  const fallbackIssueQuotation = useCallback(
-    (input: NewQuotationInput): Quotation => {
-      const now = new Date();
-      const { number, seq } = nextQuotationNumber(dataRef.current.quotations, now);
-      const q: Quotation = {
-        id: uid("quo"), kind: "quotation", number, seq, status: "draft",
-        clientId: input.clientId, subject: input.subject, date: input.date, validUntil: input.validUntil,
-        items: input.items, tax: input.tax, notes: input.notes,
-        token: generateToken(),
-        hash: computeDocumentHash("quotation", { number, seq, clientId: input.clientId, subject: input.subject, date: input.date, validUntil: input.validUntil, items: input.items, tax: input.tax, notes: input.notes }),
-        issuedAt: now.toISOString(),
-      };
-      mutate((d) => ({ ...d, quotations: [q, ...d.quotations] }));
-      return q;
-    },
-    [mutate]
-  );
-
-  const fallbackIssueInvoice = useCallback(
-    (input: NewInvoiceInput): Invoice => {
-      const now = new Date();
-      const parent = input.quotationId ? dataRef.current.quotations.find((q) => q.id === input.quotationId) : undefined;
-      const terminIndex = input.terminPct ? nextTerminIndex(dataRef.current.invoices, input.quotationId) : undefined;
-      const { number, seq } = nextInvoiceNumber(dataRef.current.invoices, parent, terminIndex, now);
-      const inv: Invoice = {
-        id: uid("inv"), kind: "invoice", number, seq, terminIndex,
-        terminLabel: input.terminLabel, terminPct: input.terminPct, quotationId: input.quotationId,
-        clientId: input.clientId, subject: input.subject, date: input.date, dueDate: input.dueDate,
-        items: input.items, tax: input.tax, notes: input.notes,
-        token: generateToken(),
-        hash: computeDocumentHash("invoice", { number, seq, clientId: input.clientId, subject: input.subject, date: input.date, dueDate: input.dueDate, items: input.items, tax: input.tax, notes: input.notes, quotationId: input.quotationId ?? null, terminIndex: terminIndex ?? null, terminLabel: input.terminLabel ?? null, terminPct: input.terminPct ?? null }),
-        issuedAt: now.toISOString(),
-      };
-      mutate((d) => ({ ...d, invoices: [inv, ...d.invoices] }));
-      return inv;
-    },
-    [mutate]
-  );
-
-  const fallbackAddPayment = useCallback(
-    (invoiceId: string, input: NewPaymentInput): Receipt => {
-      const now = new Date();
-      const invoice = dataRef.current.invoices.find((i) => i.id === invoiceId);
-      const paymentId = uid("pay");
-      const { number, seq } = nextReceiptNumber(dataRef.current.receipts, now);
-      const receipt: Receipt = {
-        id: uid("rcp"), kind: "receipt", number, seq, paymentId, invoiceId,
-        clientId: invoice?.clientId ?? "", amount: input.amount, method: input.method,
-        date: input.date,
-        forPaymentOf: input.forPaymentOf ?? (invoice ? `${invoice.subject} — s.n. ${invoice.number}` : "Pembayaran invoice"),
-        token: generateToken(),
-        hash: computeDocumentHash("receipt", { number, seq, paymentId, invoiceId, clientId: invoice?.clientId ?? "", amount: input.amount, method: input.method, date: input.date, forPaymentOf: input.forPaymentOf ?? (invoice ? `${invoice.subject} — s.n. ${invoice.number}` : "Pembayaran invoice") }),
-        issuedAt: now.toISOString(),
-      };
-      const payment: Payment = { id: paymentId, invoiceId, date: input.date, amount: input.amount, method: input.method, note: input.note, receiptId: receipt.id };
-      mutate((d) => ({ ...d, payments: [...d.payments, payment], receipts: [receipt, ...d.receipts] }));
-      return receipt;
     },
     [mutate]
   );
@@ -257,8 +237,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         const q = await api<Quotation>("/api/quotations", { method: "POST", body: JSON.stringify(input) });
         mutate((d) => ({ ...d, quotations: [q, ...d.quotations] }));
         return q;
-      }, () => fallbackIssueQuotation(input)),
-    [guard, mutate, fallbackIssueQuotation]
+      }, serverOnly),
+    [guard, mutate]
   );
 
   const setQuotationStatus = useCallback(
@@ -266,7 +246,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       guard(true, async () => {
         const q = await api<Quotation>(`/api/quotations/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
         mutate((d) => ({ ...d, quotations: d.quotations.map((x) => (x.id === id ? q : x)) }));
-      }, () => mutate((d) => ({ ...d, quotations: d.quotations.map((x) => (x.id === id ? { ...x, status } : x)) }))),
+      }, serverOnly),
     [guard, mutate]
   );
 
@@ -276,8 +256,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         const inv = await api<Invoice>("/api/invoices", { method: "POST", body: JSON.stringify(input) });
         mutate((d) => ({ ...d, invoices: [inv, ...d.invoices] }));
         return inv;
-      }, () => fallbackIssueInvoice(input)),
-    [guard, mutate, fallbackIssueInvoice]
+      }, serverOnly),
+    [guard, mutate]
   );
 
   const addPayment = useCallback(
@@ -289,8 +269,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         });
         mutate((d) => ({ ...d, payments: [...d.payments, payment], receipts: [receipt, ...d.receipts] }));
         return receipt;
-      }, () => fallbackAddPayment(invoiceId, input)),
-    [guard, mutate, fallbackAddPayment]
+      }, serverOnly),
+    [guard, mutate]
   );
 
   const saveTemplate = useCallback(

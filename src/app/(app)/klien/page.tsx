@@ -111,6 +111,7 @@ export default function KlienPage() {
 
 function NewClientModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (name: string) => void }) {
   const { addClient } = useApp();
+  const toast = useToast();
   const [form, setForm] = useState<Omit<Client, "id" | "code" | "createdAt">>({
     name: "",
     address: "",
@@ -156,7 +157,12 @@ function NewClientModal({ open, onClose, onCreated }: { open: boolean; onClose: 
         <Button
           disabled={!valid}
           onClick={async () => {
-            await addClient(form);
+            try {
+              await addClient(form);
+            } catch (e) {
+              toast({ tone: "error", title: "Klien gagal disimpan", desc: e instanceof Error ? e.message : "Coba lagi" });
+              return;
+            }
             onCreated(form.name);
             setForm({ name: "", address: "", city: "", npwp: "", picName: "", picPhone: "", picEmail: "" });
           }}

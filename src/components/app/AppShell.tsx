@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -41,6 +41,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Navigasi adalah efek samping — tidak boleh dipicu saat render (React melarang update Router di fase render).
+  useEffect(() => {
+    if (checked && ready && !authed) router.replace("/login");
+  }, [checked, ready, authed, router]);
+
   if (!checked || !ready) {
     return (
       <div className="flex h-dvh items-center justify-center bg-canvas">
@@ -50,7 +55,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!authed) {
-    router.replace("/login");
     return (
       <div className="flex h-dvh items-center justify-center bg-canvas">
         <Spinner className="h-7 w-7" />

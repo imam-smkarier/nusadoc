@@ -84,12 +84,27 @@ export async function POST(req: NextRequest) {
   const directInit = directExisting.reduce((mx, r) => Math.max(mx, parseInt(r.number.split("/")[4] || "0", 10) || 0), 0);
   await ensureCounter(prisma, counterKey, directInit);
 
+  // Counter termin per penawaran: baris wajib ada sebelum alokasi. Init dari termin tertinggi
+  // yang sudah terbit — penawaran lama (T1/T2 tanpa baris counter) melanjutkan ke T3, bukan bentrok di T1.
+  const terminKey = quotation ? `TERM-${quotation.id}` : null;
+  if (quotation && terminKey) {
+    const maxTermin = await prisma.invoice.aggregate({
+      _max: { terminIndex: true },
+      where: { quotationId: quotation.id },
+    });
+    await ensureCounter(prisma, terminKey, maxTermin._max.terminIndex ?? 0);
+  }
+
   const { row, number } = await prisma.$transaction(async (tx) => {
       let terminIndex: number | undefined;
       let items: LineItem[] = input.items ?? [];
       let subject = input.subject;
 
-      if (quotation && input.terminPct) {
+      if (quotation && input.terminPct && terminKey) {
+        // Kunci counter termin DULU (locking read): request paralel untuk penawaran yang sama
+        // antre di sini, jadi total termin di bawah sudah memuat termin yang baru di-commit.
+        // Bila ditolak, transaksi rollback dan counter ikut kembali.
+        terminIndex = await allocateCounter(tx, terminKey);
         // Integritas termin: jumlah seluruh termin aktif + yang baru wajib ≤ 100%.
         const existing = await tx.invoice.findMany({
           where: { quotationId: quotation.id },
@@ -102,8 +117,6 @@ export async function POST(req: NextRequest) {
             422
           );
         }
-        // Index termin atomik per penawaran (unik via constraint DB).
-        terminIndex = await allocateCounter(tx, `TERM-${quotation.id}`);
         items = scaleItems(quotation.items as unknown as LineItem[], input.terminPct);
         subject = input.subject || quotation.subject;
       }

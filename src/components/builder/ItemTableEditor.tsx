@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowDown, ArrowUp, BookmarkPlus, Trash2 } from "lucide-react";
 import { Field, PriceInput, TextInput } from "@/components/ui/form";
 import { Button } from "@/components/ui/primitives";
+import { useToast } from "@/components/ui/Modal";
 import { useApp } from "@/lib/store";
 import type { LineItem } from "@/lib/types";
 import { formatRupiah, uid } from "@/lib/utils";
@@ -24,6 +25,9 @@ export function ItemTableEditor({
   allowSaveTemplate?: boolean;
 }) {
   const { data, saveTemplate, deleteTemplate } = useApp();
+  const toast = useToast();
+  const fail = (e: unknown) =>
+    toast({ tone: "error", title: "Template gagal disimpan", desc: e instanceof Error ? e.message : "Coba lagi" });
   const [tplName, setTplName] = useState("");
   const [savingTpl, setSavingTpl] = useState(false);
 
@@ -53,7 +57,7 @@ export function ItemTableEditor({
               <button
                 type="button"
                 title="Hapus template"
-                onClick={() => deleteTemplate(t.id)}
+                onClick={() => deleteTemplate(t.id).catch(fail)}
                 className="rounded-full p-1 text-slate-300 hover:text-red-400"
               >
                 <Trash2 className="h-3 w-3" />
@@ -140,9 +144,13 @@ export function ItemTableEditor({
               size="sm"
               disabled={!tplName.trim()}
               onClick={async () => {
-                await saveTemplate(tplName.trim(), items);
-                setTplName("");
-                setSavingTpl(false);
+                try {
+                  await saveTemplate(tplName.trim(), items);
+                  setTplName("");
+                  setSavingTpl(false);
+                } catch (e) {
+                  fail(e);
+                }
               }}
             >
               Simpan

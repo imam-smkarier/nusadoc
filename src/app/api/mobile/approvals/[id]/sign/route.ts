@@ -47,6 +47,13 @@ export async function POST(
         { status: 400 }
       );
     }
+    // Tanda tangan hanya sah dari perangkat aktif milik penanda tangan sendiri (non-repudiation).
+    if (device.userId !== auth.user.id || !device.isActive) {
+      return NextResponse.json(
+        { ok: false, error: "Perangkat ini tidak terdaftar untuk akun Anda" },
+        { status: 403 }
+      );
+    }
 
     // Tenant guard: hanya dokumen milik organisasi user yang boleh ditandatangani
     const quotation = await prisma.quotation.findFirst({

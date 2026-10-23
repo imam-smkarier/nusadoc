@@ -27,6 +27,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // deviceId dikirim klien & unik global — perangkat yang terdaftar untuk akun lain tidak boleh diambil alih.
+    const existing = await prisma.deviceSigner.findUnique({ where: { deviceId }, select: { userId: true } });
+    if (existing && existing.userId !== user.id) {
+      return NextResponse.json(
+        { ok: false, error: "Perangkat ini sudah terdaftar untuk akun lain" },
+        { status: 409 }
+      );
+    }
+
     // Daftarkan / perbarui DeviceSigner
     const device = await prisma.deviceSigner.upsert({
       where: { deviceId },

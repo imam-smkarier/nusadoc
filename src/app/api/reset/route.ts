@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { forbidden, getSessionUser } from "@/lib/server/auth";
 import { loadAllData } from "@/lib/server/map";
-import { clearDatabase, seedDatabase } from "@/lib/server/seedDb";
+import { DEMO_ORG_ID, clearDatabase, seedDatabase } from "@/lib/server/seedDb";
 import { prisma } from "@/lib/server/db";
 
 /**
@@ -15,8 +15,10 @@ export async function POST() {
     return NextResponse.json({ error: "Not available in production" }, { status: 404 });
   }
   if (user.role !== "admin") return forbidden("Hanya admin dapat reset data demo");
+  // Seed hanya berisi data workspace demo — tenant lain tidak punya "data demo" untuk dikembalikan.
+  if (user.organizationId !== DEMO_ORG_ID) return forbidden("Reset data demo hanya untuk workspace demo");
 
-  await clearDatabase(prisma);
+  await clearDatabase(prisma, DEMO_ORG_ID);
   await seedDatabase(prisma);
   return NextResponse.json(await loadAllData(prisma, user.organizationId));
 }

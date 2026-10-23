@@ -1,6 +1,6 @@
 # Sustainable Development Workflow & Agent Rules
 
-> Dokumen ini adalah kontrak kerja untuk manusia, model AI, agent, harness, dan tool apa pun yang mengembangkan Nafiga DocFlow setelah sesi ini. Tujuannya: menjaga integritas finansial, mengurangi context loss, serta mencegah perubahan perilaku diam-diam.
+> Dokumen ini adalah kontrak kerja untuk manusia, model AI, agent, harness, dan tool apa pun yang mengembangkan NusaDoc (SaaS multi-tenant) setelah sesi ini. Tujuannya: menjaga integritas finansial, mengurangi context loss, serta mencegah perubahan perilaku diam-diam.
 
 ## 1. Urutan Membaca Wajib
 
@@ -49,6 +49,7 @@ Jangan menganggap behavior implementasi saat ini sebagai keputusan produk kalau 
 | Bug | Reproduksi → cek runtime/API/DB → isolasi akar masalah → fix → regression test |
 | Perubahan workflow bisnis | Baca PRD → proposal/perjelas keputusan bila ambigu → update PRD + code + progress log |
 | Schema/API | Desain data/migration → auth/validation/integrity → implementation → test DB/API → build |
+| Endpoint/query baru | Scoping `organizationId` + referensi silang → kuota bila menerbitkan dokumen → test integration lintas tenant |
 | Deployment | Cek CURRENT_STATE production blockers → gunakan Git/CI → jangan gunakan kredensial atau host raw |
 
 ### 3.2 Sebelum Menulis Code

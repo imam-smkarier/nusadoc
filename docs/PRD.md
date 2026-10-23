@@ -1,22 +1,32 @@
-# Product Requirements Document (PRD) — Nafiga DocFlow
+# Product Requirements Document (PRD) — NusaDoc
 
 | Properti | Nilai |
 | --- | --- |
-| Produk | Nafiga DocFlow |
-| Modul awal | Penawaran, Invoice, Pembayaran, dan Kwitansi |
-| Pemilik produk | PT. Nafiga Technology System |
-| Status | Living document — fase database aktif |
-| Versi | 0.1 |
-| Diperbarui | 13 September 2026 |
-| Sumber kebenaran teknis | [CURRENT_STATE.md](./CURRENT_STATE.md) dan [ARCHITECTURE.md](./ARCHITECTURE.md) |
+| Produk | NusaDoc |
+| Kategori | SaaS B2B multi-tenant — kendali arus kas proyek |
+| Pemilik produk | PT SMKarier Inovasi Digital |
+| Status | Living document — development; belum production (lihat CURRENT_STATE) |
+| Versi | 0.2 |
+| Diperbarui | 13 Oktober 2026 |
+| Sumber kebenaran teknis | [CURRENT_STATE.md](./CURRENT_STATE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [AUDIT_PRODUK.md](./AUDIT_PRODUK.md) |
 
-> **Prinsip dokumen ini:** PRD menyatakan _apa_ dan _mengapa_. Detail implementasi serta status nyata harus selalu dibaca dari `CURRENT_STATE.md`. Jangan mengubah alur bisnis inti tanpa memperbarui keduanya dalam commit yang sama.
+> **Prinsip dokumen ini:** PRD menyatakan _apa_ dan _mengapa_. Detail implementasi serta status nyata selalu dibaca dari `CURRENT_STATE.md`. Jangan mengubah alur bisnis inti tanpa memperbarui keduanya dalam commit yang sama.
+>
+> Asal-usul: NusaDoc adalah fork (akhir September 2026) dari Nafiga DocFlow, versi khusus PT Nafiga Technology System. Hubungan kedua produk dan rencana penyatuannya ada di [RENCANA_PORTING.md](./RENCANA_PORTING.md).
 
 ---
 
 ## 1. Ringkasan Produk
 
-**Nafiga DocFlow** adalah fondasi modul ERP untuk mengelola siklus dokumen komersial PT. Nafiga Technology System sebagai system integrator. Produk ini menghilangkan pengisian ulang data pada setiap dokumen, menghitung nilai serta status secara otomatis, dan menyediakan verifikasi dokumen publik melalui QR.
+### 1.1 Visi
+
+> **NusaDoc memastikan setiap penawaran yang disetujui berubah menjadi uang masuk — tepat nilai, tepat waktu, dan bisa dibuktikan.**
+
+**Slogan:** *Dari penawaran sampai uang masuk.*
+
+NusaDoc **bukan sekadar aplikasi pembuat dokumen**. Dokumen yang rapi hanyalah syarat minimum, dan Word, Excel, atau Paper.id pun bisa menghasilkannya. NusaDoc adalah **kendali arus kas proyek** untuk bisnis B2B Indonesia: kontraktor, system integrator, agensi, konsultan, dan vendor pengadaan. Pertanyaan yang dijawab NusaDoc: *"Uang proyek kita di mana, siapa yang harus ditagih, termin mana yang tertahan, dan berapa yang dipotong pajak?"*
+
+NusaDoc **menang** di termin proyek, kepastian pajak, koreksi beraudit, verifikasi QR, dan penagihan. NusaDoc **tidak** bersaing di akuntansi (Jurnal/Mekari, Accurate, Kledo) maupun payment gateway (Paper.id). Data diekspor ke software akuntansi pelanggan. Analisis lengkap: [AUDIT_PRODUK.md](./AUDIT_PRODUK.md) §2 & §4.
 
 Alur inti yang sudah diputuskan dan **tidak boleh diubah tanpa keputusan produk eksplisit**:
 
@@ -27,6 +37,7 @@ Master Klien → Penawaran → Invoice → Catat Pembayaran → Kwitansi otomati
 Konteks hubungan:
 
 ```text
+1 Workspace (Organization) → banyak User, Klien, dan dokumen — terisolasi dari workspace lain
 1 Klien      → banyak Penawaran
 1 Penawaran  → banyak Invoice (DP / progres / retensi / pelunasan)
 1 Invoice    → banyak Pembayaran / Kwitansi (pembayaran sebagian diperbolehkan)
@@ -34,21 +45,22 @@ Konteks hubungan:
 
 Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi tidak memiliki draft dan bersifat final sejak terbit.
 
-### 1.1 Masalah yang Diselesaikan
+### 1.2 Masalah yang Diselesaikan
 
-1. Data klien, alamat, NPWP, PIC, dan line item sering diinput ulang pada penawaran dan invoice.
-2. Nomor dokumen, total, PPN, PPh, terbilang, dan sisa tagihan rawan salah hitung jika dikerjakan manual.
-3. Termin proyek system integrator beragam (DP 50% → pelunasan 50%, DP 30% → pelunasan 70%, progres, retensi) dan harus tetap dapat ditagih serta dilacak secara konsisten.
-4. Pihak klien membutuhkan cara memeriksa keaslian dokumen tanpa diberi akses internal.
-5. Desain dokumen yang penuh blok warna gelap boros tinta ketika dicetak di printer kantor.
+1. Termin proyek (DP 30% → progres → retensi → pelunasan) dihitung manual di Excel. Hasilnya selisih rupiah dari kontrak, termin terlewat, dan sulit menjawab "proyek ini sudah ditagih berapa".
+2. Klien memotong PPh 23/22 atau memungut PPN saat membayar, sehingga piutang tidak pernah "lunas" di catatan dan rekonsiliasi jadi berantakan.
+3. Data klien, alamat, NPWP, PIC, dan line item diinput ulang di setiap dokumen.
+4. Koreksi dokumen (revisi harga, salah nominal) dilakukan dengan menimpa file, tanpa jejak.
+5. Bagian AP klien korporat/instansi meragukan dokumen PDF/Word biasa dan tidak punya cara mengecek keasliannya.
+6. Penagihan bergantung pada ingatan admin; tidak ada daftar "siapa harus ditagih hari ini".
 
-### 1.2 Hasil yang Diharapkan
+### 1.3 Hasil yang Diharapkan
 
-- Admin keuangan dapat membuat dokumen tanpa melakukan perhitungan atau penyalinan data manual.
-- Dokumen turunan selalu menyebutkan dokumen induk pada badan dokumen.
-- Nilai dan status pembayaran mencerminkan catatan pembayaran/kwitansi aktual.
-- Klien bisa memindai QR untuk melihat halaman validasi publik.
-- Dokumen tetap profesional dan hemat tinta saat dicetak A4.
+- **Rata-rata hari dari invoice terbit sampai lunas turun** (metrik utama, §9).
+- Nilai termin selalu pas dengan kontrak dan pajak benar untuk transaksi proyek B2B.
+- Dokumen turunan selalu menyebutkan dokumen induk; status pembayaran mengikuti catatan aktual.
+- Klien bisa memindai QR untuk mengecek bahwa dokumen cocok dengan arsip penerbit.
+- Setiap workspace hanya melihat datanya sendiri.
 
 ---
 
@@ -56,11 +68,12 @@ Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi 
 
 | Persona | Tujuan utama | Kebutuhan produk |
 | --- | --- | --- |
-| Admin Keuangan | Menerbitkan dokumen, mencatat pembayaran, melacak piutang | Builder cepat, hitung otomatis, status yang tepercaya, pencarian dokumen |
-| Sales / Account Manager | Menyiapkan dan mengirim penawaran | Data klien konsisten, template item, alur persetujuan jelas |
-| Direktur / Approver | Menyetujui nilai penawaran dan memantau status | Ringkasan jelas, dokumen A4 rapi, jejak status |
-| Klien / Auditor | Memastikan dokumen autentik | Halaman validasi publik, nomor, nilai, penerbit, hash, dan preview dokumen |
-| Engineer / Agent berikutnya | Mengembangkan sistem secara aman | PRD, status aktual, aturan kerja, arsitektur, dan roadmap yang tidak ambigu |
+| Pemilik / Direktur bisnis proyek | Tahu posisi kas & piutang, menyetujui penawaran | Ringkasan piutang & termin, persetujuan dari HP, rata-rata hari tagih |
+| Admin Keuangan | Menerbitkan invoice termin, mencatat pembayaran & potongan pajak, menagih | Hitung termin/pajak otomatis, pusat penagihan, ekspor untuk akuntan |
+| Sales / Account Manager | Menyiapkan dan merevisi penawaran | Template, revisi cepat, kirim dari aplikasi |
+| Klien / Bagian AP / Auditor | Memastikan dokumen autentik sebelum membayar | Halaman validasi publik tanpa login |
+| Admin workspace (pembeli SaaS) | Mendaftar, mengatur tim & langganan | Trial tanpa kartu, paket jelas, billing mandiri |
+| Engineer / Agent berikutnya | Mengembangkan sistem secara aman | PRD, status aktual, aturan kerja, arsitektur, roadmap yang tidak ambigu |
 
 ---
 
@@ -68,22 +81,17 @@ Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi 
 
 ### 3.1 Sasaran Fase Saat Ini
 
-- Data komersial disimpan di MySQL melalui Prisma dan API server-side.
-- Builder Penawaran dan Invoice berfungsi dengan preview A4 langsung.
-- Pencatatan pembayaran menerbitkan kwitansi otomatis dalam satu transaksi server-side.
-- QR validasi menunjuk halaman publik `/v/[token]` dengan token acak.
-- Login tetap mock untuk demonstrasi alur aplikasi.
+- SaaS multi-tenant yang **aman menerima pembayaran**: isolasi tenant, kuota ditegakkan server, billing tidak bisa diakali (Tahap 0 di AUDIT_PRODUK).
+- Klaim pemasaran sesuai kemampuan produk yang sebenarnya.
+- Fitur "jangan kalah dari Word" dan "hitungan dipercaya finance" (porting dari DocFlow, lihat RENCANA_PORTING).
 
-### 3.2 Non-Sasaran Fase Saat Ini
+### 3.2 Non-Sasaran
 
-- **Bukan** sistem akuntansi lengkap atau buku besar.
-- **Bukan** e-Faktur / integrasi pajak resmi.
-- **Bukan** tanda tangan elektronik tersertifikasi PSrE.
-- **Bukan** PDF server-side, email delivery, WhatsApp delivery, atau document storage immutable.
-- **Bukan** sistem authorization multi-peran yang siap production; auth masih mock.
-- **Bukan** database production maupun deployment Hostinger saat ini.
-
----
+- **Bukan** sistem akuntansi atau buku besar. Data diekspor ke software akuntansi.
+- **Bukan** e-Faktur/Coretax. Invoice NusaDoc adalah invoice komersial, bukan Faktur Pajak.
+- **Bukan** tanda tangan elektronik tersertifikasi PSrE dan bukan e-Meterai. QR + hash membuktikan kecocokan dengan arsip penerbit. Persetujuan mobile (biometrik/PIN perangkat terdaftar) adalah tanda tangan elektronik **tidak tersertifikasi** yang beraudit.
+- **Bukan** payment gateway untuk invoice tenant (fase ini). Langganan NusaDoc sendiri dibayar via Midtrans.
+- **Bukan** PDF server-side (fase ini). Dokumen dicetak lewat browser.
 
 ## 4. Aturan Bisnis yang Tidak Boleh Berubah
 
@@ -142,6 +150,16 @@ Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi 
 - QR harus mengarah ke `/v/[token]` pada origin aplikasi yang sedang dipakai.
 - Halaman validasi publik wajib menampilkan valid/tidak ditemukan, jenis, nomor, tanggal, penerbit, klien, nilai, referensi induk bila ada, hash, serta preview.
 - “Tanda tangan digital” untuk fase ini berarti **specimen tanda tangan + QR verifikasi + hash SHA-256**. Ini **bukan** tanda tangan elektronik tersertifikasi PSrE.
+- Persetujuan lewat aplikasi mobile (biometrik/PIN perangkat terdaftar, kunci ECDSA P-256) disebut **"persetujuan beraudit — tanda tangan elektronik tidak tersertifikasi"**. Tidak boleh disebut "TTE tersertifikasi", "setara meterai", atau "sah secara hukum" tanpa kualifikasi.
+- Copy publik tidak boleh menyebut dokumen "tidak bisa dipalsukan", "100% asli", atau "sah". Yang benar: pemalsuan **terdeteksi** karena isi tidak cocok dengan arsip penerbit (lihat AUDIT_PRODUK §3D).
+- Halaman validasi publik hanya boleh mengembalikan field yang memang tampil di dokumen (allowlist), tanpa data internal tenant.
+
+### 4.7 Workspace, Paket, dan Kuota
+
+- Setiap data domain milik tepat satu workspace (`organizationId`). Setiap query baca/tulis/hapus dan setiap referensi silang wajib dicek milik workspace yang sama.
+- Paket dan batasnya didefinisikan di `src/lib/plans.ts`. Kuota dokumen ditegakkan server (HTTP 402), bukan oleh UI.
+- Order langganan **selalu** milik workspace dari sesi admin yang membuatnya. Tidak ada pengikatan lewat email yang diketik pembeli.
+- Aturan hitung kuota untuk revisi, duplikat, void, dan invoice pengganti: `OPEN`, menunggu keputusan (RENCANA_PORTING §3).
 
 ---
 
@@ -165,7 +183,13 @@ Invoice juga dapat dibuat langsung tanpa penawaran untuk repeat order. Kwitansi 
 | FR-12 | Reset data demo | P1 | Environment development dapat direset ke seed dengan aksi eksplisit |
 | FR-13 | Sisa pelunasan otomatis | P1 | Builder menyarankan `100% - termin yang sudah diterbitkan`, memblokir total termin >100% |
 | FR-14 | Auth nyata & RBAC | P0 sebelum production | User login server-side, password hash, session aman, hak akses per peran |
-| FR-15 | PDF server-side & arsip | P1 | PDF konsisten di server disimpan dengan version/hash dan siap dikirim email/WA |
+| FR-15 | PDF server-side & arsip | P2 | PDF konsisten di server disimpan dengan version/hash dan siap dikirim email/WA |
+| FR-16 | Workspace multi-tenant & registrasi | P0 | Pendaftaran `/daftar` membuat workspace trial 30 hari; data antar-workspace tidak pernah terlihat atau berubah lintas tenant (diuji integration test) |
+| FR-17 | Paket, kuota & langganan | P0 | Kuota Lite 25 dokumen/bulan ditolak 402 di server; checkout Midtrans hanya oleh admin yang login; aktivasi hanya lewat webhook bertanda tangan |
+| FR-18 | Kirim dokumen email/WhatsApp | P1 | Kredensial per workspace terenkripsi; email menyebut penerbit tenant, bukan NusaDoc/SMKarier |
+| FR-19 | Persetujuan mobile | P1 | Hanya peran berizin, perangkat aktif milik penanda tangan, mengikuti state machine yang sama dengan web, tercatat di log tanda tangan |
+| FR-20 | Revisi, diskon, void & pengganti, potongan pajak saat bayar | P0 produk | Lihat RENCANA_PORTING Tahap 1–2 (acceptance mengikuti DocFlow §9–§12) |
+| FR-21 | Pusat penagihan, ekspor Excel, riwayat aktivitas, metrik hari tagih | P1 | Lihat RENCANA_PORTING Tahap 3; semua per workspace |
 
 ### 5.2 Builder Dokumen — Spesifikasi UI
 
@@ -192,11 +216,12 @@ Builder wajib memiliki split-screen pada desktop:
 
 | Area | Kebutuhan |
 | --- | --- |
-| Keamanan | Kredensial hanya di env; API write wajib mendapat autentikasi sebelum production; token validasi tidak boleh sequential |
-| Integritas | Nomor/token/hash dihitung server-side; payment dan receipt dibuat dalam satu transaksi database |
-| Kinerja | Berorientasi aplikasi internal bertrafik ringan; tidak memerlukan server spek tinggi; hindari beban PDF/Puppeteer pada fase sekarang |
+| Keamanan | Kredensial hanya di env (production wajib `MOBILE_JWT_SECRET`, `DELIVERY_ENC_KEY`, kunci Midtrans); tidak ada password default di production; semua API write terautentikasi & ber-RBAC; token validasi tidak sequential; rate limit pada login (web & mobile), registrasi, dan validasi publik |
+| Isolasi tenant | Setiap query memfilter `organizationId`; setiap endpoint baru wajib punya test integration lintas tenant |
+| Integritas | Nomor/token/hash dihitung server-side; payment dan receipt dalam satu transaksi; batas kuota, termin, dan pembayaran dicek di dalam transaksi dengan lock |
+| Kinerja | SaaS bertrafik ringan–sedang di hosting Node.js (Hostinger); hindari beban PDF/Puppeteer pada fase sekarang |
 | Keterbacaan | Light-mode workspace, layout angka tabular, bahasa Indonesia, mobile responsive |
-| Auditabilitas | Tahap production harus memiliki immutable document version, user/action/time audit log |
+| Auditabilitas | Snapshot dokumen immutable; audit log user/action/time **per workspace** (`AuditLog.organizationId` — prasyarat riwayat aktivitas) |
 | Maintainability | Semua perubahan mengikuti `docs/WORKFLOW.md`; PRD, current state, progress log diperbarui bersama perubahan perilaku |
 | Backup | Production harus memakai backup MySQL terjadwal sebelum data pelanggan nyata masuk |
 
@@ -228,51 +253,34 @@ Lihat diagram visual: [docflow-architecture.svg](./assets/docflow-architecture.s
 
 ## 8. Roadmap Produk
 
-### Fase 0 — Foundation Mockup ✅
+Fase 0–1 (mockup, database & API) dan fondasi SaaS (multi-tenant, paket, Midtrans, delivery, API mobile) sudah dibangun di development. Roadmap berikutnya mengikuti [AUDIT_PRODUK.md](./AUDIT_PRODUK.md) §5, dengan rincian porting di [RENCANA_PORTING.md](./RENCANA_PORTING.md):
 
-- UI dashboard, builder, keluarga dokumen, QR validation, status kalkulatif, print A4.
-
-### Fase 1 — Database & Server API ✅ (development)
-
-- MySQL + Prisma, API server-side, autoseed, data terbit/pembayaran tersimpan, reset demo.
-
-### Fase 2 — Production Readiness 🔴 Wajib sebelum go-live
-
-1. Auth nyata: user, password hash, reset password, session/server middleware.
-2. RBAC: minimal Sales, Finance, Approver/Direktur, Administrator.
-3. Authorization di seluruh API write; endpoint reset demo nonaktif di production.
-4. Pisahkan validasi publik dari bootstrap internal: endpoint token-scoped hanya boleh mengembalikan satu snapshot dokumen aman.
-5. Input validation server-side (Zod/ekuivalen), error handling, rate limiting token validation.
-6. Prisma migrations terverifikasi — jangan bergantung pada `db push` di production.
-7. Observability, audit log, backup/restore database, environment deployment Hostinger.
-
-### Fase 3 — Keandalan Dokumen 🟠 Setelah production readiness
-
-1. Dokumen snapshot/versi immutable saat terbit.
-2. Sisa pelunasan otomatis dan validasi total termin ≤100%.
-3. PDF server-side + arsip object storage.
-4. Kirim email/WhatsApp dokumen dan reminder jatuh tempo.
-5. Approval flow, revision/void/reissue dengan jejak audit.
-
-### Fase 4 — ERP Growth 🟡
-
-1. Purchase Order, delivery/BAST, kontrak, project milestone.
-2. Integrasi akuntansi, pajak/e-Faktur, bank reconciliation.
-3. Dashboard manajemen, aging receivable, laporan margin/project.
-4. Integrasi PSrE (Privy/Peruri) bila kekuatan hukum tanda tangan elektronik diperlukan.
+| Tahap | Tujuan | Isi utama |
+| --- | --- | --- |
+| 0 — Aman dijual 🔴 wajib sebelum iklan/go-live | Tidak ada celah billing/tenant, klaim jujur | Sisa celah keamanan (admin default, entitlement fail-closed, rate limit, race kuota/pembayaran), koreksi klaim pemasaran, backup |
+| 1 — Jangan kalah dari Word | Gesekan harian hilang | Edit draft, revisi `-R{n}`, duplikat, diskon, No. PO, qty desimal, edit klien |
+| 2 — Hitungan dipercaya finance | Angka lolos pemeriksaan finance klien | Termin pas rupiah, PPh 23 atas jasa, potongan pajak & biaya transfer saat bayar, void & pengganti, meterai, PPN 12% DPP nilai lain |
+| 3 — Alasan membayar | Uang masuk lebih cepat | Kirim dari layar (email + WA aktif), pusat penagihan & pengingat terjadwal, posisi proyek, ekspor Excel, riwayat aktivitas, metrik hari tagih |
+| 4 — Diferensiasi SaaS | Skala & paket premium | User management + batas user, paket instalasi Hak Guna, white-label per tenant, e-Meterai, link pembayaran, ekspor akuntansi/Coretax, PSrE bila dibutuhkan |
 
 ---
 
 ## 9. Metrik Keberhasilan
 
-| Metrik | Target awal |
-| --- | --- |
-| Waktu membuat penawaran standar | < 5 menit dari klien & template yang sudah ada |
-| Field diinput ulang pada invoice turunan | 0 field klien / 0 item sumber |
-| Kesalahan hitung total/pajak/terbilang | 0 dari perhitungan aplikasi |
-| Invoice berstatus tidak sesuai pembayaran | 0 (status selalu kalkulatif) |
-| QR validasi dapat dibuka | ≥99% pada aplikasi tersedia |
-| Dokumen lolos print kantor | 100% untuk layout A4 satu halaman sesuai jenis dokumen |
+**Metrik utama: rata-rata hari dari invoice terbit sampai lunas**, per workspace, dibanding baseline 3 bulan pertama workspace tersebut.
+
+| Metrik | Arti | Target awal |
+| --- | --- | --- |
+| **Rata-rata hari tagih** (invoice terbit → lunas) | Seberapa cepat uang pelanggan masuk | Turun dibanding baseline |
+| % invoice lunas sebelum jatuh tempo | Disiplin penagihan | Naik setiap bulan |
+| Piutang > 60 hari | Risiko macet | Turun |
+| Selisih nilai termin vs kontrak | Kebenaran hitung | Rp0 |
+| Kesalahan hitung total/pajak/terbilang | Kebenaran hitung | 0 |
+| Invoice berstatus tidak sesuai pembayaran | Status kalkulatif | 0 |
+| Aktivasi trial (invoice termin pertama ≤ 7 hari) | Nilai inti dirasakan | ≥ 40% |
+| Konversi trial → berbayar | Kesehatan bisnis | Baseline, lalu naik |
+| Insiden lintas tenant / aktivasi tanpa bayar | Keamanan | 0 |
+| QR validasi dapat dibuka | Ketersediaan | ≥ 99% |
 
 ---
 
@@ -299,11 +307,19 @@ Lihat diagram visual: [docflow-architecture.svg](./assets/docflow-architecture.s
 | 2026-10-02 | Paket Lite Rp 50.000 / bulan dengan kuota 25 dokumen / bulan | Pilihan paling terjangkau bagi freelancer dan bisnis rintisan mikro |
 | 2026-10-02 | Registrasi mandiri `/daftar` dengan masa trial gratis 30 hari tanpa kartu kredit | Mendorong akuisisi pengguna tanpa gesekan (PLG); akun expired menjadi read-only |
 | 2026-10-02 | Nusadoc Mobile (Flutter) dengan TTE Biometrik (Face ID/Sidik Jari) via Secure Enclave | Persetujuan dokumen cepat dalam satu genggaman untuk direksi/pemilik bisnis |
+| 2026-10-13 | Reposisi: "kendali arus kas proyek — dari penawaran sampai uang masuk"; metrik utama rata-rata hari tagih | Melawan Word/Excel/Paper.id di pembuatan dokumen = kalah; pembeda ada di termin proyek, pajak, koreksi beraudit, QR, penagihan (AUDIT_PRODUK §2, §4) |
+| 2026-10-13 | Checkout langganan wajib login sebagai admin; order selalu milik workspace sesi | Pengikatan lewat email memungkinkan siapa pun mengubah paket workspace lain |
+| 2026-10-13 | Pelunasan simulasi & signature webhook "simulated" hanya di development tanpa kunci Midtrans | Endpoint simulasi sebelumnya mengaktifkan paket berbayar tanpa bayar |
+| 2026-10-13 | Reset data demo hanya untuk workspace demo | Reset sebelumnya menghapus data semua tenant |
+| 2026-10-13 | Satu perangkat mobile hanya milik satu akun; `MOBILE_JWT_SECRET` wajib di production | Mencegah pengambilalihan perangkat TTE lintas tenant dan pemalsuan token |
+| 2026-10-13 | Persetujuan mobile disebut "tanda tangan elektronik tidak tersertifikasi" | Konsisten dengan keputusan 2026-09-13 (bukan PSrE) |
 
 ---
 
 ## 11. Referensi Internal
 
+- [Audit Produk](./AUDIT_PRODUK.md)
+- [Rencana Porting & Strategi Dua Produk](./RENCANA_PORTING.md)
 - [Architecture](./ARCHITECTURE.md)
 - [Current State](./CURRENT_STATE.md)
 - [Workflow & Agent Rules](./WORKFLOW.md)

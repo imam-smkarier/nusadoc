@@ -25,9 +25,13 @@ export default function PengaturanPage() {
 
   const set = <K extends keyof CompanySettings>(k: K, v: CompanySettings[K]) => setForm((f) => ({ ...f, [k]: v }));
 
-  const save = () => {
-    updateSettings(form);
-    toast({ tone: "success", title: "Pengaturan tersimpan", desc: "Dipakai dokumen berikutnya." });
+  const save = async () => {
+    try {
+      await updateSettings(form);
+      toast({ tone: "success", title: "Pengaturan tersimpan", desc: "Dipakai dokumen berikutnya." });
+    } catch (e) {
+      toast({ tone: "error", title: "Pengaturan gagal disimpan", desc: e instanceof Error ? e.message : "Coba lagi" });
+    }
   };
 
   return (
@@ -40,9 +44,13 @@ export default function PengaturanPage() {
             {isAdmin && (
             <Button
               variant="danger"
-              onClick={() => {
-                resetDemoData();
-                toast({ tone: "info", title: "Data demo direset", desc: "Semua perubahan mockup dikembalikan ke data awal." });
+              onClick={async () => {
+                try {
+                  await resetDemoData();
+                  toast({ tone: "info", title: "Data demo direset", desc: "Semua perubahan mockup dikembalikan ke data awal." });
+                } catch (e) {
+                  toast({ tone: "error", title: "Reset ditolak", desc: e instanceof Error ? e.message : "Coba lagi" });
+                }
               }}
             >
               <RotateCcw className="h-4 w-4" /> Reset Data Demo

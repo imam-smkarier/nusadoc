@@ -156,8 +156,8 @@ export function verifyMidtransSignature(params: {
 }): boolean {
   const config = getMidtransConfig();
 
-  // Dukungan untuk webhook simulasi pada development
-  if (!config.isConfigured && params.signatureKey === "simulated") {
+  // Webhook simulasi hanya untuk development tanpa server key — production selalu wajib signature asli.
+  if (process.env.NODE_ENV !== "production" && !config.serverKey && params.signatureKey === "simulated") {
     return true;
   }
 
@@ -168,5 +168,6 @@ export function verifyMidtransSignature(params: {
   const raw = `${params.orderId}${params.statusCode}${params.grossAmount}${config.serverKey}`;
   const computed = crypto.createHash("sha512").update(raw).digest("hex");
 
-  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(params.signatureKey));
+  const given = Buffer.from(params.signatureKey);
+  return given.length === computed.length && crypto.timingSafeEqual(Buffer.from(computed), given);
 }

@@ -47,9 +47,13 @@ export default function PenawaranDetailPage({ params }: { params: Promise<{ id: 
   const totals = quotationTotals(quotation);
   const invoices = invoicesForQuotation(quotation.id);
 
-  const act = (next: QuotationStatus, title: string) => {
-    setQuotationStatus(quotation.id, next);
-    toast({ tone: "success", title, desc: quotation.number });
+  const act = async (next: QuotationStatus, title: string) => {
+    try {
+      await setQuotationStatus(quotation.id, next);
+      toast({ tone: "success", title, desc: quotation.number });
+    } catch (e) {
+      toast({ tone: "error", title: "Status gagal diubah", desc: e instanceof Error ? e.message : "Coba lagi" });
+    }
   };
 
   return (

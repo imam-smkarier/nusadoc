@@ -1,39 +1,41 @@
-# Current State — Nusadoc
+# Current State — NusaDoc
 
 > **Tujuan:** snapshot faktual untuk engineer atau agent yang baru masuk. Ini bukan wishlist. Perbarui setiap kali status fitur, risiko, atau cara kerja berubah.
 
 | Properti | Nilai |
 | --- | --- |
-| Snapshot | 02 Oktober 2026 |
-| Git baseline | `main` |
-| Lingkungan utama | Local development (Siap Deploy Production) |
-| Database development | MySQL `nusadoc_dev` melalui container dev-shared-mysql-1 |
-| Aplikasi | Next.js 16 + Prisma 5.22 + MySQL + Flutter Companion |
-| Repository | `imam-smkarier/nusadoc` (public) |
-| Production ready | **SIAP DEPLOY** |
+| Snapshot | 13 Oktober 2026 |
+| Git | Branch `feat/saas-multitenant` (10 commit di atas `main` `2612f75`, semua lokal — belum di-push) + perbaikan audit 13 Okt yang **belum di-commit** |
+| Lingkungan | Local development saja. Belum ada staging/production yang diverifikasi |
+| Database development | MySQL `nusadoc_dev` di container `dev-shared-mysql-1`; 8 migration, `prisma migrate status`: up to date |
+| Aplikasi | Next.js 16 + Prisma 5.22 + MySQL; companion Flutter di `/home/imamnj/nusadoc-mobile` (repo git lokal sejak 13 Okt, tanpa remote) |
+| Repository | `imam-smkarier/nusadoc` — **PUBLIC** di GitHub |
+| Production ready | **BELUM.** Tahap 0 di [AUDIT_PRODUK.md](./AUDIT_PRODUK.md) §5 harus selesai lebih dulu |
 
 ---
 
 ## 1. Ringkasan Kejujuran Status
 
+Label: `VERIFIED-CODE` / `VERIFIED-LOCAL` (dijalankan langsung) / `OPEN`.
+
 | Area | Status | Keterangan |
 | --- | --- | --- |
-| Arsitektur SaaS | ✅ Production-ready | Multi-tenant penuh (`Organization` per workspace), pendaftaran mandiri `/daftar`, kuota dokumen ditegakkan server |
-| Paket Langganan | ✅ Production-ready | Trial 30 hari, Lite (Rp 50 rb, kuota 25 dok/bln), Bulanan (Rp 249 rb), Hak Guna (Rp 19,9 jt), Enterprise (WA) |
-| Halaman Billing | ✅ Production-ready | `/langganan` lengkap dengan progress bar kuota bulanan, status masa aktif, upgrade Midtrans & riwayat transaksi |
-| UI aplikasi web | ✅ Production-ready | Dashboard, list/detail, builder, dokumen, print, simulasi alur dokumen, public validation, splash screen |
-| Mobile Companion (Flutter) | ✅ Verified | Aplikasi `nusadoc-mobile` selesai dibangun (Clean Architecture, Riverpod, TTE Biometrik, Swipe to Sign, Scanner 60 FPS) |
-| Backend Mobile TTE | ✅ Production-ready | JWT dual-mode auth, hardware-backed ECDSA P-256 biometric signature verification, PIN cadangan, REST API mobile |
-| MySQL & Prisma | ✅ Production-ready | 8 migrations versioned aktif; data terbit, organisasi, kuota, payment tersimpan rapi |
-| Nomor/token/hash | ✅ Server-side | Nomor atomik per org (`org:QUO-YYYY-MM`), QR token acak, hash SHA-256 canonical |
-| Payment → Receipt | ✅ Production-ready | Satu transaksi Prisma membuat payment dan kwitansi; anti-overpayment |
-| Alur multi-termin | ✅ Production-ready | Preset + kustom %, total termin terkunci ≤ 100% di server, carry-over proporsional |
-| Auth & RBAC | ✅ Production-ready | User + session HttpOnly (scrypt); RBAC 4 peran (admin/finance/sales/viewer); permission map per-fitur |
-| Validasi API | ✅ Production-ready | Zod gate di seluruh endpoint dokumen, pembayaran, delivery, dan mobile API |
-| Audit log | ✅ Production-ready | Tabel AuditLog mencatat publish/status/receipt/settings/mobile sign |
-| Delivery Email/WA | ✅ Production-ready | SMTP Nodemailer + Fonnte/WaBlas, kredensial terenkripsi AES-256-GCM, auto-send terbit/bayar |
-| PDF server-side | 🟠 Opsional | Browser print hemat tinta sudah standar; PDF server-side opsional via `@react-pdf/renderer` |
-| Deployment Hostinger | 🟡 Siap Konfigurasi | Siap dideploy ke Hostinger Node.js App; tinggal pasang env production & domain |
+| Build & test | ✅ `VERIFIED-LOCAL` | `npm run build` lulus (55 entri route); `npm test` **110/110** (13 file); `tsc --noEmit` bersih — 13 Okt 2026 |
+| Isolasi tenant data dokumen | ✅ `VERIFIED-CODE` | Semua route CRUD memfilter `organizationId`, termasuk referensi silang |
+| Isolasi tenant billing, reset, perangkat mobile | ✅ diperbaiki 13 Okt (belum di-commit) | K1, K2, T1, T1b, T3, T4 — lihat §11 dan AUDIT_PRODUK §3A |
+| Paket & kuota | 🟡 | Kuota Lite & 402 ditegakkan; **entitlement fail-open** (T2), race kuota paralel (S3), `usersLimit` tidak ditegakkan |
+| Pembayaran langganan Midtrans | 🟡 | Signature webhook benar; checkout kini wajib login admin; state machine webhook (cancel/refund) belum benar (S12). Hanya diuji mode simulasi/sandbox |
+| Penomoran & termin | ✅ | Counter per org; counter termin diperbaiki (T9) dan cek ≤100% dikunci (S4a) |
+| Pembayaran → kwitansi | 🟡 | Atomik; overpayment ditolak server, tetapi dua pembayaran paralel bisa melebihi total (S4) |
+| Store UI | ✅ fail-closed (13 Okt) | Penolakan server (402/403/422) diteruskan; aksi finansial tidak pernah dibuat lokal |
+| Auth web | 🟡 | Session HttpOnly (scrypt), RBAC 4 peran. **Admin default dibuat juga di production saat DB kosong & kredensial demo tampil di halaman login** (T7) |
+| API mobile & TTE | 🟡 | Perangkat terikat ke pemilik & secret JWT wajib di production (13 Okt). Belum: rate limit login mobile, nonce anti-replay, lockout PIN, rotasi refresh token |
+| Delivery email/WA | 🟡 | Per workspace, terenkripsi. SSRF SMTP (S9), fallback kunci enkripsi (S10), penerbit di email hardcode SMKarier (R2). Reminder terjadwal belum ada |
+| Halaman validasi publik | 🟡 | Hash diverifikasi ulang; respons memuat field internal berlebihan (S11) |
+| Klaim pemasaran | 🔴 | Rating palsu di JSON-LD, Hak Guna on-premise yang belum ada, "backup harian", "tidak bisa dipalsukan" — AUDIT_PRODUK §3D |
+| Fitur produk vs DocFlow | 🔴 | Belum ada edit draft, revisi, diskon, void, ekspor, qty desimal, PPh 23 per jasa, potongan pajak saat bayar — [RENCANA_PORTING.md](./RENCANA_PORTING.md) |
+| Mobile companion (Flutter) | `OPEN` | Kode ada dan sudah di-commit lokal. Kontrak dengan backend belum diverifikasi (mis. login belum mengirim `deviceId`) |
+| Deployment | `OPEN` | Target Hostinger Node.js; env production, proxy, TZ, backup belum disiapkan |
 
 ---
 
@@ -41,141 +43,74 @@
 
 ### Product / UI
 
-- Login branded yang balanced: panel identitas navy + form terang lembut; light-beam border dan tilt ringan.
-- Dashboard ringkasan nilai penawaran, invoice, jatuh tempo, dan penerimaan.
-- Master klien, detail klien, tambah klien inline dan dari halaman master.
-- Builder Penawaran split-screen dengan preview A4 live.
-- Builder Invoice dari penawaran atau langsung/repeat order.
-- Termin DP, progres, retensi, pelunasan, dan persentase kustom.
-- Input harga format ribuan, totals/tax/terbilang otomatis.
-- Template item, reorder/tambah/hapus item, draft builder localStorage.
-- Dokumen Penawaran, Invoice, Kwitansi memakai family component bersama.
-- QR validasi publik, token acak, hash visual, preview dan browser print A4.
-- Aturan print hemat tinta diterapkan dan pernah diuji visual.
+- Landing, registrasi `/daftar` (trial 30 hari), login, dashboard, master klien, builder Penawaran & Invoice dengan preview A4, termin DP/progres/retensi/pelunasan, pembayaran → kwitansi, QR validasi publik, print A4 hemat tinta.
+- `/langganan`: paket, progress kuota bulanan, masa aktif, riwayat transaksi, checkout Midtrans Snap (`/pembayaran/sukses` mem-polling status).
+- `/pengaturan`: profil perusahaan, rekening, delivery email/WA, reset data demo (hanya workspace demo).
 
 ### Server / Data
 
-- MySQL development dan Prisma schema.
-- GET bootstrap memuat seluruh domain data dan seed demo bila DB kosong.
-- Create/update client.
-- Create quotation, update quotation status.
-- Create invoice.
-- Create payment + receipt atomik.
-- CRUD template yang dibutuhkan UI.
-- Update settings.
-- Reset demo development.
-- Store UI API-first dengan fallback localStorage agar demo tidak mati ketika DB development offline.
+- Multi-tenant `Organization` + `organizationId` di semua tabel domain; nomor dokumen & kode klien unik per org.
+- Paket & kuota (`src/lib/plans.ts`, `src/lib/server/plan.ts`), 402 terstruktur.
+- Snapshot immutable + hash canonical diverifikasi server; penomoran atomik `FOR UPDATE`.
+- Delivery email/WA per org (AES-256-GCM), DeliveryLog per org.
+- API mobile: login/refresh, register perangkat, dashboard, pending approval, detail dokumen, sign/reject, quick-record pembayaran.
+- AuditLog untuk publish/status/receipt/settings/mobile sign (**belum per org** — R1).
 
 ---
 
-## 3. Blocker Production (Harus Diselesaikan Sebelum Deploy)
+## 3. Blocker Production (Tahap 0)
 
-### P0 — Security & Access Control
+Rincian, bukti `file:baris`, dan rekomendasi ada di [AUDIT_PRODUK.md](./AUDIT_PRODUK.md) §3A, §3D, §5.
 
-1. **Auth server-side belum ada.**
-   - Saat ini `src/lib/auth.tsx` menerima kredensial apa pun dan menyimpan status di browser.
-   - Buat `User`, password hash (Argon2/bcrypt), session HttpOnly/SameSite, login/logout, reset password sesuai kebijakan.
-
-2. **Semua API write belum authorization.**
-   - Semua endpoint `src/app/api/*` dapat dipanggil bila URL aplikasi terbuka.
-   - Tambahkan middleware `requireSession`, pengecekan role/permission per action, dan hindari memakai identitas dari body payload.
-
-3. **Halaman validasi publik berisiko membocorkan seluruh dataset internal.**
-   - `/v/[token]` saat ini memakai store global; store memanggil `/api/bootstrap` yang mengembalikan seluruh klien, dokumen, payment, template, dan settings.
-   - Ganti menjadi endpoint publik token-scoped (`GET /api/public/validate/[token]`) yang hanya mengembalikan snapshot aman dari satu dokumen yang diminta; route publik tidak boleh memakai bootstrap internal.
-
-4. **`POST /api/reset` sangat berbahaya jika ter-expose.**
-   - Endpoint menghapus semua data dan mengisi seed.
-   - Hapus dari production build atau wajibkan environment development + admin confirmation server-side.
-
-5. **Endpoint bootstrap seed otomatis tidak cocok untuk production.**
-   - Seed hanya boleh dieksekusi oleh command deployment eksplisit, bukan request user pertama.
-
-### P0 — Integritas Finansial
-
-1. **Validasi server-side belum cukup kuat.**
-   - Validasi UI bisa dibypass dengan HTTP request langsung.
-   - Tambahkan Zod (atau ekuivalen) pada setiap input: tanggal, item, rate, amount, enum method/status, panjang text.
-
-2. **Payment API belum menolak overpayment server-side.**
-   - UI menolak nilai > outstanding, tetapi API perlu menghitung outstanding dari database dalam transaction dan menolak amount melebihi sisa.
-
-3. **Invoice termin belum menegakkan total ≤100%.**
-   - Server harus menjumlahkan `terminPct` invoice aktif dari penawaran induk, menolak termin yang melewati 100%, dan menyediakan “sisa pelunasan X%” otomatis.
-
-4. **Penomoran rawan race condition dan collision termin lintas periode.**
-   - Model sekarang mencari nomor terakhir lalu create; dua request bersamaan berpotensi collision.
-   - Nomor invoice termin saat ini memakai `quotation.seq` yang reset per bulan, sementara periode nomor invoice memakai bulan penerbitan invoice; dua quotation berbeda dengan seq sama dapat menghasilkan nomor termin sama saat ditagih pada periode invoice yang sama.
-   - Production perlu transactional sequence/counter table dengan locking, identitas termin yang immutable dari quotation, unique `[quotationId, terminIndex]`, serta retry aman pada unique conflict.
-
-5. **Klaim hash/validasi belum membuktikan integritas dokumen.**
-   - Halaman validasi saat ini hanya mengecek token; belum menghitung ulang hash.
-   - Implementasi `docPayload` saat ini memakai JSON replacer key tingkat atas sehingga nested `items` dan `tax` tidak terserialisasi lengkap dalam hash.
-   - Payload juga belum mencakup semua isi yang tampak (subject, date/validUntil, notes, termin/reference, method, issuer/client snapshot), sehingga perubahan master dapat mengubah tampilan historis tanpa mengubah hash.
-   - Saat publish, simpan canonical immutable snapshot lengkap; hash snapshot tersebut dengan canonical serializer rekursif, lalu verifikasi ulang di endpoint publik.
-
-6. **Dokumen terbit belum benar-benar immutable.**
-   - Buat versi/snapshot final, larang edit destructive, dan mekanisme void/reissue dengan jejak relasi.
-
-### P1 — Operasional
-
-1. Gunakan Prisma migrations versioned (`prisma migrate dev` / `prisma migrate deploy`), jangan `db push` di production.
-2. Tambahkan audit log untuk publish/status/payment/settings/user action.
-3. Tambahkan error boundary, structured logger, monitoring, health check, backup/restore runbook.
-4. Tambahkan rate limit terhadap `/v/[token]` dan endpoint auth.
-5. Gunakan object storage untuk PDF/artifact jika server-side PDF mulai diterapkan.
+1. **T7** — `ensureAdminUser` membuat admin dengan password default di production saat tabel user kosong; kredensial demo tampil di halaman login.
+2. **T2 + S12** — entitlement fail-open; webhook tidak menurunkan plan saat cancel/expire/refund.
+3. **T5 + T6** — rate limit login mobile; kunci limiter dari `X-Forwarded-For` yang bisa dipalsukan.
+4. **S3 + S4** — kuota dan total pembayaran harus dicek di dalam transaksi dengan lock.
+5. **S10 + S11** — `DELIVERY_ENC_KEY` wajib di production; serializer allowlist untuk halaman validasi publik.
+6. **Klaim pemasaran M1–M10** — koreksi copy; keluarkan Hak Guna dari checkout self-serve.
+7. **Operasional** — env production (`MOBILE_JWT_SECRET`, `DELIVERY_ENC_KEY`, Midtrans production), backup terjadwal + uji restore, health check & monitoring, rencana rollback.
 
 ---
 
-## 4. Pengujian yang Sudah Dilakukan
+## 4. Pengujian
 
-| Area | Metode | Hasil |
+| Area | Metode | Hasil terakhir |
 | --- | --- | --- |
-| Build | `npm run build` | Sukses pada 13 Sep 2026 |
-| Type safety | Build Next.js/TypeScript | Sukses pada baseline snapshot |
-| MySQL bootstrap | `GET /api/bootstrap` | Autoseed: 4 klien, 4 quotation, 3 invoice, 2 payment/receipt seed |
-| API quotation | POST API | Nomor, token, hash server-side muncul |
-| API payment | POST API | Payment + receipt tercipta dan relasi ada |
-| UI builder → MySQL | Builder Penawaran | Dokumen diterbitkan, baris diverifikasi dengan query MySQL, lalu reset demo |
-| Multi-termin | Browser | Carry-over dan termin T1/T2/T3 ditampilkan serta nominal proporsional dihitung |
-| Payment parsial | Browser | Kwitansi final terbit, status/remaining amount tampil |
-| Public validation | Browser | Valid dan token tidak ada menampilkan state tepat |
-| Print | Browser emulation | Print hanya dokumen A4, latar besar mati, border tetap |
+| Build | `npm run build` | Lulus, 13 Okt 2026 (`VERIFIED-LOCAL`) |
+| Type | `npx tsc --noEmit` | Bersih, 13 Okt 2026 |
+| Unit (calc, hash, numbering, RBAC, zod, secret, midtrans, plan, mobile JWT/ECDSA, store fail-closed, AppShell redirect, guard secret) | `npm test` | Lulus |
+| Integration DB (`nusadoc_dev`) — counter paralel, rollback payment, SaaS & kuota, **counter termin route**, **isolasi tenant billing/reset/perangkat** | `npm test` | Lulus; data uji dibersihkan (0 sisa, dicek) |
+| Total | `npm test` | **110/110** (13 file) |
+| API (`tests/api`, butuh server hidup) | `npm run test:api` | Tidak dijalankan 13 Okt |
+| Browser | Preview lokal port 3005 | `/dashboard` tanpa sesi → `/login` tanpa error Router (13 Okt) |
 
-### Test yang Belum Ada (wajib untuk fase production)
-
-- Unit test perhitungan tax/status/terbilang/nomor.
-- Integration test API auth + authorization.
-- Transaction test concurrent numbering, overpayment, total termin, dan rollback payment/receipt.
-- E2E browser terotomasi untuk happy path dan negative path.
-- Accessibility audit keyboard/focus/contrast.
-- Backup/restore drill MySQL.
+Belum ada: E2E browser otomatis, uji beban, uji backup/restore, pentest runtime, uji kontrak aplikasi Flutter terhadap API.
 
 ---
 
 ## 5. Cara Memulai Sesi Berikutnya
 
-1. Baca berurutan: `AGENTS.md` → dokumen ini → `docs/PRD.md` → `docs/WORKFLOW.md`.
-2. Jalankan `git status --short`; jangan menghapus perubahan user yang tidak terkait.
-3. Pastikan `DATABASE_URL` lokal tersedia dalam `.env`; **jangan buka/tampilkan nilainya**.
-4. Jalankan `npm run build` sebelum menyatakan pekerjaan siap.
-5. Untuk perubahan schema: desain migration → review → `npx prisma migrate dev --name <deskriptif>` di local; jangan memakai reset/force di production.
-6. Setelah perubahan perilaku: update `PRD.md`, dokumen ini, dan `PROGRESS_LOG.md` dalam commit yang sama.
+1. Baca: `AGENTS.md` → dokumen ini → `docs/AUDIT_PRODUK.md` → `docs/PRD.md` → `docs/WORKFLOW.md`.
+2. `git status --short` dan `git log --oneline -12`; jangan menghapus perubahan yang tidak terkait. Jangan bekerja di worktree terpisah selama ada perubahan yang belum di-commit.
+3. Pastikan `.env` lokal ada; **jangan buka atau tampilkan isinya**.
+4. Perubahan skema: `prisma migrate diff` → folder migration → `npx prisma migrate deploy`. Jangan `db push`/reset di DB bersama.
+5. Integration test menulis ke `nusadoc_dev` — hanya dengan data berprefix `TEST-`/`[TEST]`/`org_test_` yang dibersihkan di `afterAll`. Pertahankan pola ini.
+6. Midtrans/Fonnte/WaBlas hanya sandbox/test. Tidak ada deploy, push, atau kirim pesan nyata tanpa izin eksplisit.
+7. Setelah perubahan perilaku: update `PRD.md`, dokumen ini, dan `PROGRESS_LOG.md` dalam commit yang sama.
 
 ---
 
 ## 6. Next Recommended Slice
 
-Urutan yang paling aman dan bernilai tinggi:
-
-1. **P0 security/integrity:** auth nyata, middleware API, Zod validation, production guard reset/seed.
-2. **P0 financial correctness:** server-side outstanding check, termin total ≤100%, sisa pelunasan otomatis, sequence concurrency.
-3. **P1 traceability:** audit log, document snapshot/version/void/reissue.
-4. **P1 operations:** migration pipeline, test suite, backup/monitoring/deployment readiness.
-5. **P2 experience:** server PDF, email/WA delivery, reminder jatuh tempo.
-
+1. **Commit perbaikan audit 13 Okt** (menunggu izin Imam).
+2. **Tahap 0** (AUDIT_PRODUK §5): T7 → T2/S12 → S3/S4 → T5/T6 → S10/S11 → koreksi klaim.
+3. **Keputusan Imam** atas RENCANA_PORTING (kuota Q1–Q6, strategi dua produk), lalu porting Tahap 1 lewat merge 3-arah.
 
 ---
+
+## Riwayat Slice (arsip — fakta pada tanggalnya)
+
+> Bagian di bawah dipertahankan sebagai histori. Status terkini selalu mengikuti §1–§6 di atas.
 
 ## 7. Hasil Audit & Penyelesaian (13 September 2026)
 
@@ -248,3 +183,21 @@ Dua audit independen (arsitektur/data & product/QA) diselesaikan dalam 5 tahap c
 - i18n scaffold (`next-intl`).
 
 
+
+---
+
+## 11. Audit Kebenaran & Perbaikan Isolasi Tenant (13 Oktober 2026)
+
+Pekerjaan 29 Sep–2 Okt diamankan dalam 10 commit lokal di branch `feat/saas-multitenant` (`c9c2a82`…`d2a743a`). Audit read-only lalu menghasilkan [AUDIT_PRODUK.md](./AUDIT_PRODUK.md) dan [RENCANA_PORTING.md](./RENCANA_PORTING.md). Perbaikan di bawah **belum di-commit**.
+
+| Temuan | Perbaikan | Verifikasi |
+| --- | --- | --- |
+| K1 `simulated-pay` mengaktifkan paket gratis | Hanya development tanpa server key; sesi admin workspace pemilik; sekali pakai (`status: pending`) | `tenant-isolation.test.ts` — gagal di kode lama, lulus setelah perbaikan |
+| K2 reset demo menghapus semua tenant | Hanya workspace demo; `clearDatabase(db, orgId)` menolak org kosong | `tenant-isolation.test.ts` (kasus positif sengaja tidak dijalankan agar data demo dev tetap) |
+| T1 order diikat lewat email; T1b `"simulated"` diterima di production | Checkout wajib login admin, order milik workspace sesi; webhook tidak menautkan lewat email; signature simulasi hanya dev tanpa server key | `tenant-isolation.test.ts`, `secrets-guard.test.ts` |
+| T3 pengambilalihan `deviceId`; T4 secret JWT fallback | 409 bila perangkat milik akun lain; sign wajib perangkat aktif milik sendiri; `MOBILE_JWT_SECRET` wajib di production | `tenant-isolation.test.ts`, `secrets-guard.test.ts` |
+| T9 counter termin `TERM-*`; S4a race ≤100% | `ensureCounter` dari termin tertinggi; kunci counter sebelum menghitung total; `allocateCounter` gagal keras tanpa baris | `invoice-termin.test.ts` — kode lama 3/3 gagal (unique constraint) |
+| Store tidak fail-closed | `ApiError`/`NetworkError`, fallback finansial lokal dihapus, toast error di semua pemanggil | `store-failclosed.test.tsx` |
+| `AppShell` navigasi saat render | `useEffect` | `appshell-redirect.test.tsx` (gagal di kode lama) + browser |
+
+Catatan: `src/lib/numbering.ts` kini tidak dipakai kode aplikasi (hanya test) dan dijadwalkan dihapus saat porting (P8). `.claude/launch.json` (preview lokal port 3005) ditambahkan untuk uji browser.

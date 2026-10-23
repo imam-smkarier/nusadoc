@@ -1,12 +1,12 @@
-# Architecture — Nafiga DocFlow
+# Architecture — NusaDoc
 
 > Dokumen ini menjelaskan desain teknis yang **ada sekarang** dan boundary yang harus dipertahankan. Untuk kebutuhan produk lihat [PRD.md](./PRD.md); untuk status keamanan dan gap aktual lihat [CURRENT_STATE.md](./CURRENT_STATE.md).
 
 ## 1. Diagram
 
-![Nafiga DocFlow architecture](./assets/docflow-architecture.svg)
+![Arsitektur (diagram warisan DocFlow — belum memuat lapisan SaaS, mobile, delivery)](./assets/docflow-architecture.svg)
 
-Buka langsung untuk resolusi penuh: [docflow-architecture.svg](./assets/docflow-architecture.svg).
+Buka langsung untuk resolusi penuh: [docflow-architecture.svg](./assets/docflow-architecture.svg). Diagram ini berasal dari DocFlow; lapisan multi-tenant, billing, delivery, dan API mobile dijelaskan di §4.
 
 ---
 
@@ -19,18 +19,18 @@ Buka langsung untuk resolusi penuh: [docflow-architecture.svg](./assets/docflow-
 | Dokumen | React components, qrcode.react, `window.print()` / `@page A4` |
 | API | Next.js Route Handlers (`src/app/api`) |
 | ORM | Prisma 5.22 |
-| Database | MySQL (`nafiga_docflow` pada development lokal) |
+| Database | MySQL (`nusadoc_dev` pada development lokal) |
 | State UI | React Context di `src/lib/store.tsx` |
-| Fallback dev | localStorage bila `/api/bootstrap` gagal — **bukan** strategi production |
+| Fallback dev | localStorage hanya bila server tak terjangkau, khusus data master non-finansial; aksi finansial gagal tertutup — **bukan** strategi production |
 
 ## 3. Struktur Proyek
 
 ```text
 src/
 ├── app/
-│   ├── (app)/                 # Workspace internal, dibungkus AppShell/auth mock
+│   ├── (app)/                 # Workspace tenant, dibungkus AppShell (sesi server)
 │   ├── api/                   # Route handlers, server-side authority
-│   ├── login/                 # Login UI (auth mock)
+│   ├── login/ daftar/         # Login & registrasi workspace trial
 │   └── v/[token]/             # Validasi publik tanpa login
 ├── components/
 │   ├── app/                   # Shell, navigasi, kartu validasi
@@ -66,7 +66,7 @@ Client **tidak boleh** menjadi sumber kebenaran untuk:
 - izin/otorisasi;
 - perhitungan batas pembayaran atau termin untuk security/integrity.
 
-Catatan saat ini: beberapa aturan tersebut masih punya validasi UI atau fallback lokal untuk mode development. Lihat gap di `CURRENT_STATE.md`.
+Store client (`src/lib/store.tsx`) meneruskan penolakan server (`ApiError` 402/403/422) ke UI dan tidak pernah membuat dokumen finansial secara lokal. Mode lokal hanya untuk data master saat server tak terjangkau (`NetworkError`).
 
 ### Server API
 
@@ -78,24 +78,33 @@ Server adalah sumber kebenaran untuk:
 - transaksi Payment + Receipt;
 - akses MySQL via Prisma.
 
-Endpoint saat ini:
+Endpoint saat ini (34 route, semua di-scope per workspace kecuali yang ditandai publik). Rincian audit scoping: [AUDIT_PRODUK.md](./AUDIT_PRODUK.md) §3A.
 
-| Endpoint | Fungsi | Akses saat ini |
+| Endpoint | Fungsi | Akses |
 | --- | --- | --- |
-| `GET /api/bootstrap` | Load semua data, seed bila kosong | Tidak terautentikasi — dev only behavior |
-| `POST /api/clients` | Tambah klien | Belum auth |
-| `PATCH /api/clients/[id]` | Ubah klien | Belum auth |
-| `POST /api/quotations` | Terbit penawaran | Belum auth |
-| `PATCH /api/quotations/[id]` | Ubah status penawaran | Belum auth |
-| `POST /api/invoices` | Terbit invoice | Belum auth |
-| `POST /api/payments` | Payment + kwitansi transaksi | Belum auth |
-| `POST /api/templates` | Simpan template | Belum auth |
-| `DELETE /api/templates/[id]` | Hapus template | Belum auth |
-| `PUT /api/settings` | Simpan pengaturan | Role admin |
-| `POST /api/reset` | Hapus & seed demo | Role admin; dev only |
-| `POST /api/subscription/checkout` | Sesi checkout langganan Midtrans Snap | Publik / In-App |
-| `POST /api/webhooks/midtrans` | Webhook notifikasi pembayaran Midtrans (SHA-512) | Publik (Signature-verified) |
-| `GET /api/subscription/status` | Status paket & lisensi aktif + histori | Publik / Sesi |
+| `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Sesi web, profil + kuota workspace | Publik + rate limit / sesi |
+| `POST /api/auth/register` | Registrasi workspace trial 30 hari (pendaftar = admin) | Publik + rate limit |
+| `GET /api/bootstrap` | Data workspace (seed demo hanya di development) | Sesi |
+| `POST /api/clients`, `GET`/`PATCH /api/clients/[id]` | Master klien | `clients.write` |
+| `POST /api/quotations`, `PATCH /api/quotations/[id]` | Terbit penawaran (kuota), state machine status | `quotation.write` / `quotation.send`·`decide` |
+| `POST /api/invoices` | Terbit invoice langsung/termin (kuota, termin ≤100% terkunci) | `invoice.write` |
+| `POST /api/payments` | Payment + kwitansi atomik (kuota, anti-overpayment) | `payment.write` |
+| `POST /api/templates`, `DELETE /api/templates/[id]` | Template item | `template.write` |
+| `GET`/`PUT /api/settings` | Profil perusahaan workspace | `settings.update` (admin) |
+| `GET`/`PUT /api/delivery/settings`, `POST /api/delivery/test`, `GET /api/delivery/logs` | SMTP & WhatsApp per workspace (terenkripsi) | admin |
+| `POST /api/reset` | Reset data **workspace demo** | Admin `org_demo`; 404 di production |
+| `GET /api/public/validate/[token]` | Validasi QR satu dokumen | Publik, token-scoped + rate limit |
+| `GET /api/health` | Cek DB | Publik |
+| `POST /api/subscription/checkout` | Order langganan Midtrans Snap untuk workspace sesi | **Admin login** (401 `LOGIN_REQUIRED` untuk tamu) |
+| `GET /api/subscription/status` | Paket, kuota, histori workspace | Sesi |
+| `GET /api/subscription/[orderId]` | Polling status order (halaman konfirmasi) | Publik (tanpa email/token) |
+| `GET /api/subscription/simulated-pay` | Pelunasan simulasi | **Hanya development tanpa server key Midtrans**, admin workspace pemilik, sekali pakai |
+| `POST /api/webhooks/midtrans` | Notifikasi pembayaran (SHA-512) → aktivasi workspace pemilik order | Publik, signature-verified ("simulated" hanya dev tanpa server key) |
+| `POST /api/mobile/auth/login`, `POST /api/mobile/auth/refresh` | Token mobile (perangkat terikat ke satu akun) | Publik / refresh token |
+| `POST /api/mobile/devices/register` | Kunci publik ECDSA / PIN perangkat milik sendiri | Bearer |
+| `GET /api/mobile/dashboard`, `GET /api/mobile/approvals/pending`, `GET /api/mobile/documents/[id]` | Ringkasan & dokumen workspace | Bearer |
+| `POST /api/mobile/approvals/[id]/sign`, `POST /api/mobile/approvals/[id]/reject` | Persetujuan dari perangkat aktif milik penanda tangan | Bearer + `quotation.decide` |
+| `POST /api/mobile/payments/quick-record` | Catat pembayaran + kwitansi dari HP (kuota) | Bearer + `payment.write` |
 
 ### Database
 

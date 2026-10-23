@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Plus, UserRound } from "lucide-react";
 import { Combobox, Field, TextInput, TextArea } from "@/components/ui/form";
 import { Button } from "@/components/ui/primitives";
+import { useToast } from "@/components/ui/Modal";
 import { useApp } from "@/lib/store";
 import type { Client } from "@/lib/types";
 
@@ -81,6 +82,7 @@ export function ClientPicker({ value, onChange }: { value: string | null; onChan
 
 function InlineNewClient({ onCancel, onCreate }: { onCancel: () => void; onCreate: (c: Client) => void }) {
   const { addClient } = useApp();
+  const toast = useToast();
   const [form, setForm] = useState({
     name: "",
     address: "",
@@ -128,8 +130,11 @@ function InlineNewClient({ onCancel, onCreate }: { onCancel: () => void; onCreat
           size="sm"
           disabled={!valid}
           onClick={async () => {
-            const c = await addClient(form);
-            onCreate(c);
+            try {
+              onCreate(await addClient(form));
+            } catch (e) {
+              toast({ tone: "error", title: "Klien gagal disimpan", desc: e instanceof Error ? e.message : "Coba lagi" });
+            }
           }}
         >
           Simpan & Pilih

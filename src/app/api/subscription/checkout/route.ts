@@ -14,22 +14,21 @@ export async function POST(req: NextRequest) {
     const { plan, customerName, customerEmail, customerPhone } = parsed.data;
     const planMeta = SUBSCRIPTION_PLANS[plan as PlanKey];
 
-    // Cek apakah user sedang login di web
+    // Paket berlaku untuk seluruh workspace: order hanya boleh dibuat admin yang sedang login,
+    // dan selalu terikat ke workspace sesi itu. Mengikat lewat email yang diketik pembeli berarti
+    // siapa pun bisa mengubah paket workspace orang lain.
     const loggedUser = await getSessionUser();
-    let organizationId: string | null = loggedUser?.organizationId ?? null;
-    let userId: string | null = loggedUser?.id ?? null;
-
-    // Jika guest checkout dari landing page, coba cocokkan email dengan user terdaftar
-    if (!organizationId) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: customerEmail.toLowerCase() },
-        select: { id: true, organizationId: true },
-      });
-      if (existingUser) {
-        organizationId = existingUser.organizationId;
-        userId = existingUser.id;
-      }
+    if (!loggedUser) {
+      return NextResponse.json(
+        { ok: false, code: "LOGIN_REQUIRED", error: "Masuk atau daftar dulu agar paket terhubung ke workspace Anda." },
+        { status: 401 }
+      );
     }
+    if (loggedUser.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "Hanya admin workspace yang dapat membeli paket." }, { status: 403 });
+    }
+    const organizationId = loggedUser.organizationId;
+    const userId = loggedUser.id;
 
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const randSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();

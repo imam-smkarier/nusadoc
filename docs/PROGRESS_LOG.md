@@ -2,6 +2,38 @@
 
 > Log ini bersifat append-only. Tambahkan entry baru di atas; jangan menulis ulang histori kecuali faktanya salah. Detail kondisi saat ini ada di [CURRENT_STATE.md](./CURRENT_STATE.md).
 
+## 2026-10-13 — Pengamanan Repo, Audit Kebenaran, Perbaikan Isolasi Tenant, Reposisi Produk
+
+### Done
+
+- **Pekerjaan 29 Sep–2 Okt diamankan:** 10 commit lokal per slice di branch `feat/saas-multitenant` (`c9c2a82`…`d2a743a`): brand, skema + 6 migration, deps, Midtrans, delivery, mobile, SaaS multi-tenant, landing, test, docs. Belum di-push (repo GitHub berstatus PUBLIC). `nusadoc-mobile` dijadikan repo git lokal (`e56e610`, `build/`, `dist/*.apk`, `.dart_tool/` di-ignore).
+- **Audit read-only** → [AUDIT_PRODUK.md](./AUDIT_PRODUK.md): isolasi tenant per endpoint (34 route), alur uang & auth, klaim pemasaran, uji "kenapa tidak pakai Word/Excel/Paper.id", roadmap Tahap 0–4, metrik utama rata-rata hari tagih.
+- **Perbaikan kritis (dengan test):**
+  - K1 `simulated-pay` tidak bisa lagi mengaktifkan paket gratis (hanya dev tanpa server key, admin workspace pemilik, sekali pakai).
+  - K2 reset demo hanya workspace demo; `clearDatabase` wajib `organizationId`.
+  - T1 checkout wajib login admin, order milik workspace sesi; webhook tidak menautkan lewat email. T1b signature "simulated" hanya dev tanpa server key.
+  - T3 perangkat mobile terikat ke satu akun (login/register 409, sign 403). T4 `MOBILE_JWT_SECRET` wajib di production (ditambahkan ke `.env.example`).
+  - T9 counter termin `TERM-*` diinisialisasi dari termin tertinggi; S4a counter dikunci sebelum cek total termin ≤100%; `allocateCounter` gagal keras tanpa baris counter.
+  - Store gagal tertutup (`ApiError`/`NetworkError`, fallback finansial lokal dihapus, toast error di semua pemanggil).
+  - `AppShell` redirect login lewat `useEffect`.
+  - Modal checkout mengarahkan tamu ke `/daftar` dan tidak lagi menjanjikan "akses akun dikirim ke email".
+- **Rencana porting DocFlow & strategi dua produk** → [RENCANA_PORTING.md](./RENCANA_PORTING.md). Temuan kunci: `nafiga-docflow@a875785` = basis fork. Simulasi merge 3-arah: 28 file bersih, 28 konflik (18 file kode), 23 file baru. Rekomendasi: NusaDoc sebagai inti, Nafiga sebagai tenant/instalasi Hak Guna. **Menunggu keputusan Imam; belum ada yang di-port.**
+- **Dokumen dirapikan:** `README.md` (ditulis ulang, tanpa password default), `docs/CURRENT_STATE.md` (status jujur: belum production; blocker Tahap 0), `docs/PRD.md` v0.2 (visi "kendali arus kas proyek", slogan "Dari penawaran sampai uang masuk.", metrik utama, aturan workspace/kuota, keputusan 13 Okt), `docs/ARCHITECTURE.md` (tabel 34 endpoint), `AGENTS.md`, `docs/WORKFLOW.md`.
+
+### Verified
+
+- `npm run build` lulus; `npx tsc --noEmit` bersih; `npm test` **110/110** (75 lama + 35 baru); `prisma migrate status` up to date (8 migration) — `VERIFIED-LOCAL`.
+- Test baru dijalankan juga terhadap kode lama dan gagal di sana: `invoice-termin` 3/3 gagal (unique constraint); `tenant-isolation` + `secrets-guard` 15/20 gagal (5 sisanya berperilaku sama di kedua versi); `appshell-redirect` gagal. Test reset tidak dijalankan terhadap kode lama karena akan menghapus data semua tenant di DB dev.
+- Data uji integration: 0 baris tersisa di `nusadoc_dev` setelah run (dicek dengan query hitung).
+- Browser (preview lokal port 3005): `/dashboard` tanpa sesi → `/login` tanpa error "Cannot update a component (Router)".
+
+### Known Limitations
+
+- Perbaikan sesi ini **belum di-commit**.
+- Blocker production yang masih terbuka (Tahap 0): admin default di production & kredensial demo di halaman login (T7), entitlement fail-open (T2), rate limit mobile & sumber IP (T5/T6), race kuota & pembayaran (S3/S4), fallback `DELIVERY_ENC_KEY` (S10), respons halaman publik berlebih (S11), state machine webhook (S12), klaim pemasaran M1–M10.
+- Kolom Paper.id di uji kompetitor berdasarkan informasi publik, bukan uji coba akun.
+- Kontrak API ↔ aplikasi Flutter belum diverifikasi.
+
 ## 2026-10-02 — Transformasi SaaS Multi-Tenant, Trial 30 Hari, Paket Lite 50K, & Verifikasi Mobile Flutter
 
 ### Done

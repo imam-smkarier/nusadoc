@@ -18,7 +18,9 @@ export async function ensureCounter(db: PrismaClient, key: string, initValue = 0
  */
 export async function allocateCounter(tx: Tx, key: string, initValue = 0): Promise<number> {
   const rows = await tx.$queryRaw<{ value: bigint | number }[]>`SELECT value FROM DocumentCounter WHERE \`key\` = ${key} FOR UPDATE`;
-  const next = Math.max(Number(rows[0]?.value ?? 0), initValue) + 1;
+  // Tanpa baris, UPDATE di bawah tidak mengenai apa pun dan nomor yang sama terus berulang.
+  if (rows.length === 0) throw new Error(`Counter ${key} belum diinisialisasi — panggil ensureCounter dulu`);
+  const next = Math.max(Number(rows[0].value), initValue) + 1;
   await tx.$executeRaw`UPDATE DocumentCounter SET value = ${next} WHERE \`key\` = ${key}`;
   return next;
 }

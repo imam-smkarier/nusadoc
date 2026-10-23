@@ -33,8 +33,22 @@ SaaS B2B **Penawaran, Invoice Multi-Termin & Kwitansi Otomatis** dengan QR verif
 
 ```bash
 npm run dev                 # dev server web (http://localhost:3000)
-npm run build               # verifikasi build produksi (42 routes)
-npm test                    # jalankan 75 unit & integration tests
-npx prisma migrate deploy   # terapkan migrations versioned
+npm run build               # verifikasi build produksi (55 entri route)
+npm test                    # 110 test unit & integration (integration menulis data uji berprefix TEST/org_test_ ke nusadoc_dev lalu membersihkannya)
+npx prisma migrate deploy   # terapkan migrations versioned (skema baru: prisma migrate diff → folder migration → deploy)
 ```
+
+## Wajib dibaca sebelum mengubah kode
+
+- `docs/CURRENT_STATE.md` — status nyata & blocker production (status: **belum production**).
+- `docs/AUDIT_PRODUK.md` — temuan keamanan/isolasi tenant/klaim (rujukan `file:baris` @ `d2a743a`), visi "kendali arus kas proyek", roadmap Tahap 0–4.
+- `docs/RENCANA_PORTING.md` — porting fitur DocFlow lewat merge 3-arah (basis `nafiga-docflow@a875785`) + checklist tenant/kuota; **usulan, belum disetujui**.
+
+## Aturan tenant & billing (jangan dilanggar)
+
+- Setiap query baca/tulis/hapus dan setiap referensi silang memfilter `organizationId`; endpoint baru wajib punya test integration lintas tenant (pola `tests/integration/tenant-isolation.test.ts`).
+- Order langganan hanya dari sesi admin dan selalu milik workspace sesi itu — jangan pernah menautkan workspace lewat email.
+- Endpoint/jalur simulasi (pelunasan simulasi, signature "simulated", `simulateApproval`) hanya untuk development tanpa kunci asli.
+- Store UI gagal tertutup: penolakan server (402/403/422) diteruskan ke UI; dokumen finansial tidak pernah dibuat lokal.
+- Copy publik: tanpa rating/angka yang tidak berdata, tanpa klaim "sah/tidak bisa dipalsukan/TTE tersertifikasi" (lihat AUDIT_PRODUK §3D).
 
